@@ -105,8 +105,8 @@ Typical savings for a `t3.medium` instance:
 | Scenario | YES | NO | Non-voters | Result |
 |----------|-----|----|-----------| -------|
 | All agree | 3 | 0 | 0 | ✅ SHUTDOWN |
-| Split decision | 2 | 2 | 0 | ❌ STAY RUNNING |
-| Partial votes | 2 | 0 | 1 | ✅ SHUTDOWN |
+| Split decision | 2 | 1 | 0 | ❌ STAY RUNNING |
+| Partial votes | 1 | 1 | 1 | ❌ STAY RUNNING |
 | No consensus | 1 | 0 | 2 | ❌ STAY RUNNING |
 
 *Non-voters are counted as NO votes (safe default)*
