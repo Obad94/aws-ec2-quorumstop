@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================
-# EC2 Democratic Shutdown - Server-side Vote Handler
+# AWS EC2 QuorumStop - Server-side Vote Handler
 # Handles team voting logic on the EC2 instance
 # ============================================
 # Installation:
@@ -337,7 +337,7 @@ show_status() {
 }
 
 show_usage() {
-    echo "EC2 Democratic Shutdown - Server-side Vote Handler"
+    echo "AWS EC2 QuorumStop - Server-side Vote Handler"
     echo ""
     echo "📖 USAGE:"
     echo "  vote_shutdown yes             - Cast YES vote (agree to shutdown)"
@@ -347,7 +347,7 @@ show_usage() {
     echo "  vote_shutdown debug           - Show connection debug info"
     echo ""
     echo "🗳️  VOTING PROCESS:"
-    echo "  1. Someone runs shutdown_server.bat on their Windows machine"
+    echo "  1. Someone runs shutdown on their Windows machine"
     echo "  2. This script sends notifications to all connected users"
     echo "  3. Users vote within the time limit (default: 5 minutes)"
     echo "  4. Majority YES votes = shutdown approved"
@@ -392,4 +392,4 @@ case "$1" in
         show_usage
         exit 1
         ;;
-esac
+ esac

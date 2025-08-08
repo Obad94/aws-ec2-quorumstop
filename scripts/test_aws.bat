@@ -1,11 +1,14 @@
 @echo off
 
 REM ============================================
-REM EC2 Democratic Shutdown - AWS Debug Test
+REM AWS EC2 QuorumStop - AWS Debug Test
 REM Tests AWS CLI installation and connectivity
 REM ============================================
 
-echo === EC2 Democratic Shutdown - AWS Debug Test ===
+REM Resolve script directory so paths work from anywhere
+set "SCRIPT_DIR=%~dp0"
+
+echo === AWS EC2 QuorumStop - AWS Debug Test ===
 echo.
 
 echo [1/3] Testing AWS CLI installation...
@@ -42,14 +45,14 @@ if errorlevel 1 (
 
 echo.
 echo [3/3] Testing EC2 access...
-if not exist config.bat (
-    echo ERROR: config.bat not found!
+if not exist "%SCRIPT_DIR%config.bat" (
+    echo ERROR: scripts\config.bat not found!
     echo Cannot test EC2 instance access without configuration
     pause
     exit /b 1
 )
 
-call config.bat
+call "%SCRIPT_DIR%config.bat"
 echo Testing access to instance: %INSTANCE_ID%
 
 aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --output table
@@ -79,11 +82,11 @@ echo - EC2 Access: ✓ Can access your instance
 echo - Instance ID: %INSTANCE_ID%
 echo - Region: %AWS_REGION%
 echo.
-echo 🎉 You're ready to use the EC2 Democratic Shutdown System!
+echo 🎉 You're ready to use AWS EC2 QuorumStop!
 echo.
 echo Next steps:
-echo 1. Run: start_server.bat (to start your server)
-echo 2. Run: view_config.bat (to see full configuration)
-echo 3. Run: shutdown_server.bat (to test democratic shutdown)
+echo 1. Run: scripts\start_server.bat (to start your server)
+echo 2. Run: scripts\view_config.bat (to see full configuration)
+echo 3. Run: scripts\shutdown_server.bat (to test democratic shutdown)
 echo.
 pause

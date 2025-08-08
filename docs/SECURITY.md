@@ -443,8 +443,8 @@ echo "TrustedUserCAKeys /etc/ssh/ssh_ca.pub" | sudo tee -a /etc/ssh/sshd_config
 - Do NOT open public issues for security vulnerabilities
 
 **Security Questions:**
-- 📖 [Security Wiki](https://github.com/yourusername/aws-ec2-quorumstop/wiki/Security)
-- 💬 [Security Discussions](https://github.com/yourusername/aws-ec2-quorumstop/discussions/categories/security)
+- 📖 [Security Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki/Security)
+- 💬 [Security Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions/categories/security)
 - 🔒 Private team channels for sensitive topics
 
 ---

@@ -1,0 +1,22 @@
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Logs and temp
+*.log
+*.tmp
+*.temp
+*.bak
+*.old
+
+# Local state
+shutdown_log.txt
+
+# AWS CLI artifacts
+.aws/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store

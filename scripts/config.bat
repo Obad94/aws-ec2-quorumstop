@@ -1,6 +1,6 @@
 @echo off
 REM ============================================
-REM EC2 Democratic Shutdown - Configuration
+REM AWS EC2 QuorumStop - Configuration
 REM This file is automatically updated by scripts
 REM Last updated: [AUTO-GENERATED TIMESTAMP]
 REM ============================================
@@ -48,7 +48,7 @@ REM =============================
 REM Show current configuration when called with "show" parameter
 if "%1"=="show" (
     echo ============================================
-    echo EC2 Democratic Shutdown - Configuration
+    echo AWS EC2 QuorumStop - Configuration
     echo ============================================
     echo.
     echo AWS Settings:

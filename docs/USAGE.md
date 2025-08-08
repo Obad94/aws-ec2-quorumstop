@@ -1,15 +1,15 @@
 # Usage Guide
 
-This guide covers daily operations and common workflows with the EC2 Democratic Shutdown System.
+This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
 
 ## 🚀 Quick Reference
 
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
-| `start_server.bat` | Start EC2 instance | Beginning of work day |
-| `shutdown_server.bat` | Request team shutdown | End of work day |
-| `view_config.bat` | Show configuration | Check settings/IP |
-| `test_aws.bat` | Test AWS connectivity | Troubleshooting |
+| `scripts/start_server.bat` | Start EC2 instance | Beginning of work day |
+| `scripts/shutdown_server.bat` | Request team shutdown | End of work day |
+| `scripts/view_config.bat` | Show configuration | Check settings/IP |
+| `scripts/test_aws.bat` | Test AWS connectivity | Troubleshooting |
 
 ## 📅 Daily Workflow
 
@@ -17,7 +17,7 @@ This guide covers daily operations and common workflows with the EC2 Democratic 
 
 1. **Start the server**:
    ```batch
-   start_server.bat
+   scripts/start_server.bat
    ```
 
 2. **Expected output**:
@@ -36,7 +36,6 @@ This guide covers daily operations and common workflows with the EC2 Democratic 
 
 3. **Connect to your server**:
    ```batch
-   # The script shows you the SSH command:
    ssh -i "C:\Users\YourName\Downloads\your-key.pem" ubuntu@52.89.123.45
    ```
 
@@ -44,7 +43,7 @@ This guide covers daily operations and common workflows with the EC2 Democratic 
 
 1. **Request shutdown**:
    ```batch
-   shutdown_server.bat
+   scripts/shutdown_server.bat
    ```
 
 2. **What happens**:
@@ -75,7 +74,7 @@ This guide covers daily operations and common workflows with the EC2 Democratic 
 
 ### For the Person Requesting Shutdown
 
-1. Run `shutdown_server.bat`
+1. Run `scripts/shutdown_server.bat`
 2. Wait for the voting process to complete
 3. Accept the team's decision
 
@@ -196,7 +195,7 @@ vote_shutdown status
 **Manual voting simulation** (for testing):
 ```bash
 # Simulate vote initiation (normally done by Windows client)
-./vote_shutdown.sh initiate 203.0.113.10
+/home/ubuntu/vote_shutdown.sh initiate 203.0.113.10
 
 # Check what users are connected
 who
@@ -211,7 +210,7 @@ ls -la /tmp/shutdown_vote/
 ### View Current Configuration
 
 ```batch
-view_config.bat
+scripts\view_config.bat
 ```
 
 Shows:
@@ -245,7 +244,7 @@ Shows:
 
 3. **Verify changes**:
    ```batch
-   view_config.bat
+   scripts\view_config.bat
    ```
 
 ## 🔧 Common Operations
@@ -276,7 +275,7 @@ aws ec2 stop-instances --instance-ids i-1234567890abcdef0
 ### Connect to Server Manually
 
 ```batch
-# Get the command from view_config.bat, or:
+# Get the command from scripts/view_config.bat, or:
 ssh -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
 ```
 
@@ -315,12 +314,12 @@ ssh: connect to host 52.89.123.45 port 22: Connection refused
 **Solutions**:
 1. **Check server status**:
    ```batch
-   start_server.bat  # This will show current status
+   scripts/start_server.bat  # This will show current status
    ```
 
 2. **Verify IP is current**:
    ```batch
-   view_config.bat  # Shows configured IP
+   scripts/view_config.bat  # Shows configured IP
    ```
 
 3. **Check security group**:
@@ -357,7 +356,7 @@ ssh: connect to host 52.89.123.45 port 22: Connection refused
 **Solutions**:
 1. **Test AWS CLI**:
    ```batch
-   test_aws.bat
+   scripts/test_aws.bat
    ```
 
 2. **Reconfigure credentials**:
@@ -371,7 +370,7 @@ ssh: connect to host 52.89.123.45 port 22: Connection refused
 
 ### Server Won't Start
 
-**Problem**: `start_server.bat` fails
+**Problem**: `scripts/start_server.bat` fails
 
 **Common causes**:
 1. **Instance doesn't exist**: Check INSTANCE_ID in config.bat
@@ -412,14 +411,14 @@ If you have multiple teams using different servers:
 3. **Switch between teams**:
    ```batch
    cd C:\ec2-scripts\team-frontend\
-   start_server.bat
+   scripts/start_server.bat
    ```
 
 ### Scheduled Operations
 
 **Auto-start at 9 AM (optional)**:
 1. Use Windows Task Scheduler
-2. Create task: Run `start_server.bat` at 9 AM weekdays
+2. Create task: Run `scripts/start_server.bat` at 9 AM weekdays
 3. Configure: "Run whether user is logged on or not"
 
 **Reminder shutdown at 6 PM**:
@@ -504,10 +503,10 @@ Our EC2 Democratic Shutdown Agreement:
 
 ```batch
 # Test your setup
-test_aws.bat
+scripts\test_aws.bat
 
 # View current settings
-view_config.bat
+scripts\view_config.bat
 
 # Check if server is accessible
 ssh -i "%KEY_FILE%" ubuntu@%SERVER_IP% "echo 'Connection test successful'"
@@ -521,9 +520,9 @@ ssh -i "%KEY_FILE%" ubuntu@%SERVER_IP% "echo 'Connection test successful'"
 
 ### Community Support
 
-- 🐛 [Report Issues](https://github.com/yourusername/ec2-democratic-shutdown/issues)
-- 💬 [Ask Questions](https://github.com/yourusername/ec2-democratic-shutdown/discussions)
-- 📚 [Check Wiki](https://github.com/yourusername/ec2-democratic-shutdown/wiki)
+- 🐛 [Report Issues](https://github.com/Obad94/aws-ec2-quorumstop/issues)
+- 💬 [Ask Questions](https://github.com/Obad94/aws-ec2-quorumstop/discussions)
+- 📚 [Check Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki)
 
 ---
 

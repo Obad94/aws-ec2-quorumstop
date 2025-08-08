@@ -1,6 +1,6 @@
 # Server-Side Installation
 
-This directory contains the server-side components for the EC2 Democratic Shutdown System.
+This directory contains the server-side components for AWS EC2 QuorumStop.
 
 ## 📁 Files
 
@@ -14,7 +14,7 @@ This directory contains the server-side components for the EC2 Democratic Shutdo
 
 ```bash
 # Download and run the installer
-wget https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/install.sh
+wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/install.sh
 chmod +x install.sh
 ./install.sh
 ```
@@ -23,7 +23,7 @@ chmod +x install.sh
 
 ```bash
 # Download the voting script
-wget https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/vote_shutdown.sh
+wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Make executable
 chmod +x vote_shutdown.sh

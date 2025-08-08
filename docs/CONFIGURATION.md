@@ -5,12 +5,12 @@ This guide covers all configuration options for customizing AWS EC2 QuorumStop f
 ## 🔧 Overview
 
 The system has two main configuration points:
-- **Client-side**: `config.bat` (Windows batch scripts)
-- **Server-side**: `vote_shutdown.sh` (EC2 instance)
+- **Client-side**: `scripts/config.bat` (Windows batch scripts)
+- **Server-side**: `server/vote_shutdown.sh` (EC2 instance)
 
 ## 💻 Client-Side Configuration
 
-### Core Settings (`config.bat`)
+### Core Settings (`scripts/config.bat`)
 
 ```batch
 @echo off
@@ -163,9 +163,9 @@ if "%ENVIRONMENT%"=="production" (
 
 ## 🖥️ Server-Side Configuration
 
-### Team Member Mapping (`vote_shutdown.sh`)
+### Team Member Mapping (`server/vote_shutdown.sh`)
 
-Edit the `DEV_NAMES` array in `/home/ubuntu/vote_shutdown.sh`:
+Edit the `DEV_NAMES` array in `server/vote_shutdown.sh` (deployed to `/home/ubuntu/vote_shutdown.sh` on EC2):
 
 ```bash
 # ============================================
@@ -472,3 +472,4 @@ TEST_SIMULATE_USERS=3       # Simulate 3 connected users
 if [ "$TEST_MODE" = true ]; then
     # Override real user detection with test data
     get_connected_users()
+```

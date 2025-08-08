@@ -2,22 +2,25 @@
 setlocal enabledelayedexpansion
 
 REM ============================================
-REM EC2 Democratic Shutdown - Server Startup
+REM AWS EC2 QuorumStop - Server Startup
 REM Starts EC2 instance and updates configuration
 REM ============================================
 
+REM Resolve script directory so paths work from anywhere
+set "SCRIPT_DIR=%~dp0"
+
 REM Load configuration
-if not exist config.bat (
-    echo ERROR: config.bat not found!
-    echo Please ensure config.bat is in the same directory
+if not exist "%SCRIPT_DIR%config.bat" (
+    echo ERROR: config.bat not found in scripts folder!
+    echo Expected at: %SCRIPT_DIR%config.bat
     pause
     exit /b 1
 )
 
-call config.bat
+call "%SCRIPT_DIR%config.bat"
 echo Loaded configuration for user: %YOUR_NAME%
 
-echo === EC2 Democratic Shutdown - Server Startup ===
+echo === AWS EC2 QuorumStop - Server Startup ===
 echo.
 
 echo [1/3] Checking current server status...
@@ -25,24 +28,24 @@ echo Instance ID: %INSTANCE_ID%
 echo Current config IP: %SERVER_IP%
 
 REM Get server status
-aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > status.tmp
+aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_status.tmp"
 if errorlevel 1 (
     echo ERROR: Failed to check server status
     echo Please check your AWS configuration and credentials
-    del status.tmp 2>nul
+    del "%TEMP%\qs_status.tmp" 2>nul
     pause
     exit /b 1
 )
 
-if not exist status.tmp (
+if not exist "%TEMP%\qs_status.tmp" (
     echo ERROR: No response from AWS
     echo Please verify AWS CLI is properly configured
     pause
     exit /b 1
 )
 
-set /p SERVER_STATUS=<status.tmp
-del status.tmp
+set /p SERVER_STATUS=<"%TEMP%\qs_status.tmp"
+del "%TEMP%\qs_status.tmp"
 REM Trim spaces from status
 for /f "tokens=* delims= " %%a in ("%SERVER_STATUS%") do set SERVER_STATUS=%%a
 for /l %%a in (1,1,100) do if "%SERVER_STATUS:~-1%"==" " set SERVER_STATUS=%SERVER_STATUS:~0,-1%
@@ -69,16 +72,16 @@ if "%SERVER_STATUS%"=="stopping" (
     timeout /t 10 /nobreak >nul
     set /a STOP_WAIT_COUNT+=1
     
-    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > stop_status.tmp
+    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_stop_status.tmp"
     if errorlevel 1 (
         echo ERROR: Cannot check status during stop wait
-        del stop_status.tmp 2>nul
+        del "%TEMP%\qs_stop_status.tmp" 2>nul
         pause
         exit /b 1
     )
     
-    set /p STOP_STATUS=<stop_status.tmp
-    del stop_status.tmp
+    set /p STOP_STATUS=<"%TEMP%\qs_stop_status.tmp"
+    del "%TEMP%\qs_stop_status.tmp"
     REM Trim spaces from status
     for /f "tokens=* delims= " %%a in ("%STOP_STATUS%") do set STOP_STATUS=%%a
     for /l %%a in (1,1,100) do if "%STOP_STATUS:~-1%"==" " set STOP_STATUS=%STOP_STATUS:~0,-1%
@@ -108,12 +111,12 @@ if "%SERVER_STATUS%"=="running" (
     echo SUCCESS: Server is already running!
     echo Getting current IP address...
     
-    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > ip.tmp
-    if exist ip.tmp (
-        set /p CURRENT_IP=<ip.tmp
+    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_ip.tmp"
+    if exist "%TEMP%\qs_ip.tmp" (
+        set /p CURRENT_IP=<"%TEMP%\qs_ip.tmp"
         REM Trim spaces from IP
         for /f "tokens=* delims= " %%a in ("!CURRENT_IP!") do set CURRENT_IP=%%a
-        for /l %%a in (1,1,100) do if "!CURRENT_IP:~-1!"==" " set CURRENT_IP=!CURRENT_IP:~0,-1%
+        for /l %%a in (1,1,100) do if "!CURRENT_IP:~-1!"==" " set CURRENT_IP=!CURRENT_IP:~0,-1!
         
         if not "!CURRENT_IP!"=="None" (
             echo Server IP: !CURRENT_IP!
@@ -132,7 +135,7 @@ if "%SERVER_STATUS%"=="running" (
         ) else (
             echo Server is running but no public IP assigned yet
         )
-        del ip.tmp
+        del "%TEMP%\qs_ip.tmp"
     )
     echo.
     echo Server is ready for use!
@@ -146,20 +149,20 @@ if "%SERVER_STATUS%"=="stopped" (
     echo.
     echo [2/3] Server is stopped. Starting now...
     
-    aws ec2 start-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% > start_output.tmp
+    aws ec2 start-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% > "%TEMP%\qs_start_output.tmp"
     if errorlevel 1 (
         echo ERROR: Failed to send start command
-        if exist start_output.tmp (
+        if exist "%TEMP%\qs_start_output.tmp" (
             echo AWS Output:
-            type start_output.tmp
+            type "%TEMP%\qs_start_output.tmp"
         )
-        del start_output.tmp 2>nul
+        del "%TEMP%\qs_start_output.tmp" 2>nul
         pause
         exit /b 1
     )
     
     echo SUCCESS: Start command sent to AWS
-    del start_output.tmp 2>nul
+    del "%TEMP%\qs_start_output.tmp" 2>nul
     
     echo.
     echo [3/3] Waiting for server to become running...
@@ -172,16 +175,16 @@ if "%SERVER_STATUS%"=="stopped" (
     timeout /t 15 /nobreak >nul
     set /a WAIT_COUNT+=1
     
-    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > current_status.tmp
+    aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_current_status.tmp"
     if errorlevel 1 (
         echo ERROR: Cannot check status during startup
-        del current_status.tmp 2>nul
+        del "%TEMP%\qs_current_status.tmp" 2>nul
         pause
         exit /b 1
     )
     
-    set /p CURRENT_STATUS=<current_status.tmp
-    del current_status.tmp
+    set /p CURRENT_STATUS=<"%TEMP%\qs_current_status.tmp"
+    del "%TEMP%\qs_current_status.tmp"
     REM Trim spaces from status
     for /f "tokens=* delims= " %%a in ("%CURRENT_STATUS%") do set CURRENT_STATUS=%%a
     for /l %%a in (1,1,100) do if "%CURRENT_STATUS:~-1%"==" " set CURRENT_STATUS=%CURRENT_STATUS:~0,-1%
@@ -193,12 +196,12 @@ if "%SERVER_STATUS%"=="stopped" (
         echo SUCCESS: Server is now running!
         
         echo Getting new IP address...
-        aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > new_ip.tmp
-        if exist new_ip.tmp (
-            set /p NEW_IP=<new_ip.tmp
+        aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_new_ip.tmp"
+        if exist "%TEMP%\qs_new_ip.tmp" (
+            set /p NEW_IP=<"%TEMP%\qs_new_ip.tmp"
             REM Trim spaces from IP
             for /f "tokens=* delims= " %%a in ("!NEW_IP!") do set NEW_IP=%%a
-            for /l %%a in (1,1,100) do if "!NEW_IP:~-1!"==" " set NEW_IP=!NEW_IP:~0,-1%
+            for /l %%a in (1,1,100) do if "!NEW_IP:~-1!"==" " set NEW_IP=!NEW_IP:~0,-1!
             
             if not "!NEW_IP!"=="None" (
                 echo.
@@ -213,7 +216,7 @@ if "%SERVER_STATUS%"=="stopped" (
             ) else (
                 echo Server running but IP not assigned yet
             )
-            del new_ip.tmp
+            del "%TEMP%\qs_new_ip.tmp"
         )
         echo.
         echo Server is ready for use!
@@ -266,7 +269,7 @@ REM Create temporary file with updated configuration
 (
 echo @echo off
 echo REM ============================================
-echo REM EC2 Democratic Shutdown - Configuration
+echo REM AWS EC2 QuorumStop - Configuration
 echo REM This file is automatically updated by scripts
 echo REM Last updated: %TIMESTAMP%
 echo REM ============================================
@@ -307,7 +310,7 @@ echo REM Display Configuration
 echo REM =============================
 echo if "%%1"=="show" ^(
 echo     echo ============================================
-echo     echo EC2 Democratic Shutdown - Configuration
+echo     echo AWS EC2 QuorumStop - Configuration
 echo     echo ============================================
 echo     echo.
 echo     echo AWS Settings:
@@ -341,8 +344,8 @@ echo     echo.
 echo     echo Last Updated: %%date%% %%time%%
 echo     echo ============================================
 echo ^)
-) > config_temp.bat
+) > "%SCRIPT_DIR%config_temp.bat"
 
 REM Replace original config file
-move config_temp.bat config.bat >nul
+move /y "%SCRIPT_DIR%config_temp.bat" "%SCRIPT_DIR%config.bat" >nul
 goto :eof

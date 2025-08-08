@@ -1,4 +1,4 @@
-# EC2 Democratic Shutdown System
+# AWS EC2 QuorumStop
 
 > A collaborative AWS EC2 management system that prevents accidental shutdowns through team voting and automated safety checks.
 
@@ -27,24 +27,24 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ec2-democratic-shutdown.git
-   cd ec2-democratic-shutdown
+   git clone https://github.com/Obad94/aws-ec2-quorumstop.git
+   cd aws-ec2-quorumstop
    ```
 
 2. **Configure your team settings**
    ```batch
-   # Edit config.bat with your AWS details and team IPs
-   notepad config.bat
+   REM Edit scripts\config.bat with your AWS details and team IPs
+   notepad scripts\config.bat
    ```
 
 3. **Start your server**
    ```batch
-   start_server.bat
+   scripts\start_server.bat
    ```
 
 4. **Request shutdown (with team vote)**
    ```batch
-   shutdown_server.bat
+   scripts\shutdown_server.bat
    ```
 
 ## 📋 Prerequisites
@@ -65,8 +65,8 @@ Windows Client Scripts → AWS CLI → EC2 Instance → SSH → Voting System �
 
 ### How It Works
 
-1. **Start Process**: `start_server.bat` starts the EC2 instance and updates IP configuration
-2. **Shutdown Request**: Any team member runs `shutdown_server.bat`
+1. **Start Process**: `scripts/start_server.bat` starts the EC2 instance and updates IP configuration
+2. **Shutdown Request**: Any team member runs `scripts/shutdown_server.bat`
 3. **Vote Notification**: System sends rich formatted notifications to all connected users via SSH
 4. **Voting Period**: 5-minute window for team members to vote with real-time progress updates
 5. **Decision**: Majority rules with transparent vote breakdown - ties default to "keep running" (safe choice)
@@ -105,8 +105,8 @@ Typical savings for a `t3.medium` instance:
 | Scenario | YES | NO | Non-voters | Result |
 |----------|-----|----|-----------| -------|
 | All agree | 3 | 0 | 0 | ✅ SHUTDOWN |
-| Split decision | 2 | 1 | 0 | ❌ STAY RUNNING |
-| Partial votes | 1 | 1 | 1 | ❌ STAY RUNNING |
+| Split decision | 2 | 2 | 0 | ❌ STAY RUNNING |
+| Partial votes | 2 | 0 | 1 | ✅ SHUTDOWN |
 | No consensus | 1 | 0 | 2 | ❌ STAY RUNNING |
 
 *Non-voters are counted as NO votes (safe default)*
@@ -142,9 +142,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/yourusername/ec2-democratic-shutdown/issues)
-- 💬 [Discussions](https://github.com/yourusername/ec2-democratic-shutdown/discussions)
-- 📖 [Wiki](https://github.com/yourusername/ec2-democratic-shutdown/wiki)
+- 🐛 [Report Issues](https://github.com/Obad94/aws-ec2-quorumstop/issues)
+- 💬 [Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions)
+- 📖 [Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki)
 
 ---
 
@@ -152,19 +152,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ```batch
 # View current configuration
-view_config.bat
+scripts\view_config.bat
 
 # Start server (updates IP automatically)
-start_server.bat
+scripts\start_server.bat
 
 # Request shutdown (initiates team vote)
-shutdown_server.bat
+scripts\shutdown_server.bat
 
 # Test AWS connectivity
-test_aws.bat
+scripts\test_aws.bat
 
-# Debug mode (comprehensive testing)
-shutdown_server_debug.bat
+# Server-side installer (run on EC2)
+server/install.sh
+
+# Planned helpers (stubs)
+tools\setup-wizard.bat
+tools\sync-ip.bat
 ```
 
 **Made with ❤️ for collaborative teams**

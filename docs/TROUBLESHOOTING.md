@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and fix common issues with the EC2 Democratic Shutdown System.
+This guide helps you diagnose and fix common issues with AWS EC2 QuorumStop.
 
 ## 🔍 Quick Diagnosis
 
@@ -9,14 +9,14 @@ Run through these steps first to identify the problem category:
 ### 1. Basic System Check
 
 ```batch
-# Test AWS connectivity
-test_aws.bat
+REM Test AWS connectivity
+scripts\test_aws.bat
 
-# View current configuration
-view_config.bat
+REM View current configuration
+scripts\view_config.bat
 
-# Check if config file exists and is readable
-dir config.bat
+REM Check if config file exists and is readable
+dir scripts\config.bat
 ```
 
 ### 2. Identify Problem Category
@@ -157,7 +157,7 @@ aws ec2 describe-regions --query "Regions[*].RegionName" --output table
 
 2. **Verify IP address**:
    ```batch
-   view_config.bat
+   scripts\view_config.bat
    # Check if SERVER_IP matches actual public IP
    ```
 
@@ -257,7 +257,7 @@ ls -la /home/ubuntu/vote_shutdown.sh
 **If script is missing or outdated:**
 ```bash
 # Download the latest enhanced script
-wget https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/vote_shutdown.sh
+wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Or recreate manually (see Installation Guide Step 7)
 nano /home/ubuntu/vote_shutdown.sh
@@ -303,15 +303,13 @@ DEV_NAMES["YOUR_REAL_IP_3"]="ActualName3"
 
 **Symptoms**: No emojis, basic messages instead of rich formatting
 
-**Cause**: Using old version of vote script
-
 **Solution**:
 ```bash
 # Check script version by looking for enhanced features
 grep "🗳️" /home/ubuntu/vote_shutdown.sh
 
 # If no emojis found, update to enhanced version
-wget -O /home/ubuntu/vote_shutdown.sh https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/vote_shutdown.sh
+wget -O /home/ubuntu/vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Make executable and configure team
 chmod +x /home/ubuntu/vote_shutdown.sh
@@ -463,22 +461,22 @@ aws ec2 describe-instances --instance-ids i-your-instance-id --query "Reservatio
 
 1. **Backup current config**:
    ```batch
-   copy config.bat config_backup.bat
+   copy scripts\config.bat scripts\config_backup.bat
    ```
 
 2. **Download fresh scripts** from GitHub
 
 3. **Reconfigure**:
    ```batch
-   notepad config.bat
+   notepad scripts\config.bat
    # Update with your settings from backup
    ```
 
 4. **Test step by step**:
    ```batch
-   test_aws.bat
-   view_config.bat  
-   start_server.bat
+   scripts\test_aws.bat
+   scripts\view_config.bat  
+   scripts\start_server.bat
    ```
 
 ### Contact Support
@@ -494,23 +492,23 @@ echo %INSTANCE_ID%
 # Copy exact error text from Command Prompt
 
 # Configuration
-view_config.bat
+scripts\view_config.bat
 
 # AWS account info
 aws sts get-caller-identity
 ```
 
 **Where to get help**:
-- 📖 [Project Wiki](https://github.com/yourusername/ec2-democratic-shutdown/wiki)
-- 🐛 [GitHub Issues](https://github.com/yourusername/ec2-democratic-shutdown/issues) 
-- 💬 [GitHub Discussions](https://github.com/yourusername/ec2-democratic-shutdown/discussions)
+- 📖 Project Wiki (if enabled): https://github.com/Obad94/aws-ec2-quorumstop/wiki
+- 🐛 Issues: https://github.com/Obad94/aws-ec2-quorumstop/issues
+- 💬 Discussions: https://github.com/Obad94/aws-ec2-quorumstop/discussions
 
 ---
 
 ## ✅ Prevention Checklist
 
 **Weekly maintenance**:
-- [ ] Test `test_aws.bat` - ensure AWS connectivity
+- [ ] Test `scripts\test_aws.bat` - ensure AWS connectivity
 - [ ] Check security groups - verify team IP addresses
 - [ ] Review AWS costs - confirm savings are realized
 - [ ] Update SSH keys - rotate if needed
@@ -526,7 +524,7 @@ aws sts get-caller-identity
 **When problems occur**:
 1. ✋ **Don't panic** - most issues are configuration problems
 2. 📝 **Document the error** - copy exact messages
-3. 🔍 **Start with basics** - run `test_aws.bat`
+3. 🔍 **Start with basics** - run `scripts\test_aws.bat`
 4. 📖 **Check this guide** - search for your error message
 5. 💬 **Ask for help** - provide full error details when asking
 

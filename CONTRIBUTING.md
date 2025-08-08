@@ -8,7 +8,7 @@ Thank you for your interest in contributing to AWS EC2 QuorumStop! This project 
 
 Found a bug? Help us improve by reporting it!
 
-1. **Check existing issues** first: [GitHub Issues](https://github.com/yourusername/aws-ec2-quorumstop/issues)
+1. **Check existing issues** first: [GitHub Issues](https://github.com/Obad94/aws-ec2-quorumstop/issues)
 2. **Create a detailed bug report** using our bug report template
 3. **Include all necessary information** to help us reproduce the issue
 
@@ -24,7 +24,7 @@ Found a bug? Help us improve by reporting it!
 
 Have an idea for improvement? We'd love to hear it!
 
-1. **Check [Discussions](https://github.com/yourusername/aws-ec2-quorumstop/discussions)** for similar ideas
+1. **Check [Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions)** for similar ideas
 2. **Create a feature request** using our feature request template
 3. **Explain your use case** and proposed solution
 4. **Consider backward compatibility** implications
@@ -45,7 +45,7 @@ Ready to contribute code? Follow these steps:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/aws-ec2-quorumstop.git
+git clone https://github.com/<your-username>/aws-ec2-quorumstop.git
 cd aws-ec2-quorumstop
 
 # Create feature branch
@@ -60,6 +60,8 @@ git commit -m "feat: add weighted voting algorithm for team leads"
 # Push to your fork
 git push origin feature/new-voting-algorithm
 ```
+
+Replace <your-username> in the clone URL with your GitHub username when contributing from a fork.
 
 ### Testing Your Changes
 
@@ -391,9 +393,9 @@ For experienced contributors:
 
 ### Community Support
 
-- 💬 **[GitHub Discussions](https://github.com/yourusername/aws-ec2-quorumstop/discussions)**: Ask questions, share ideas
-- 📖 **[Wiki](https://github.com/yourusername/aws-ec2-quorumstop/wiki)**: Detailed guides and troubleshooting
-- 🐛 **[Issues](https://github.com/yourusername/aws-ec2-quorumstop/issues)**: Report bugs and request features
+- 💬 **[GitHub Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions)**: Ask questions, share ideas
+- 📖 **[Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki)**: Detailed guides and troubleshooting
+- 🐛 **[Issues](https://github.com/Obad94/aws-ec2-quorumstop/issues)**: Report bugs and request features
 
 ### Contact Maintainers
 
@@ -482,6 +484,6 @@ We welcome contributions of all sizes! Recent stats:
 
 Your contributions help teams worldwide manage their infrastructure more collaboratively and cost-effectively.
 
-For questions about contributing, check our [Discussions](https://github.com/yourusername/aws-ec2-quorumstop/discussions) or create an [Issue](https://github.com/yourusername/aws-ec2-quorumstop/issues).
+For questions about contributing, check our [Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions) or create an [Issue](https://github.com/Obad94/aws-ec2-quorumstop/issues).
 
 **Happy coding!** 🚀

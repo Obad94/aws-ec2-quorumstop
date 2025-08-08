@@ -1,6 +1,6 @@
 # Installation Guide
 
-This guide will walk you through setting up the EC2 Democratic Shutdown System from scratch.
+This guide will walk you through setting up AWS EC2 QuorumStop from scratch.
 
 ## 📋 Prerequisites Checklist
 
@@ -124,18 +124,15 @@ ssh -i "C:\path\to\your-key.pem" ubuntu@YOUR-EC2-PUBLIC-IP
 
 ```batch
 # Option 1: Git clone (if you have git)
-git clone https://github.com/yourusername/ec2-democratic-shutdown.git
-cd ec2-democratic-shutdown
-
-# Option 2: Download ZIP
-# Download from GitHub → Extract to C:\ec2-scripts\
+git clone https://github.com/Obad94/aws-ec2-quorumstop.git
+cd aws-ec2-quorumstop
 ```
 
 ### Configure Your Environment
 
-1. **Edit `config.bat`**:
+1. **Edit `scripts/config.bat`**:
    ```batch
-   notepad config.bat
+   notepad scripts\config.bat
    ```
 
 2. **Update these settings**:
@@ -226,10 +223,10 @@ ssh -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
 
 ```bash
 # Download the script directly
-wget https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/vote_shutdown.sh
+wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Or use curl if wget is not available
-curl -o vote_shutdown.sh https://raw.githubusercontent.com/yourusername/ec2-democratic-shutdown/main/server/vote_shutdown.sh
+curl -o vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Make executable
 chmod +x vote_shutdown.sh
@@ -360,7 +357,7 @@ Your EC2 Democratic Shutdown System is now ready. Next steps:
 ## 🆘 Need Help?
 
 - Check our [Troubleshooting Guide](TROUBLESHOOTING.md)
-- [Open an issue](https://github.com/yourusername/ec2-democratic-shutdown/issues)
+- [Open an issue](https://github.com/Obad94/aws-ec2-quorumstop/issues)
 - Review your configuration with `view_config.bat`
 
 ---

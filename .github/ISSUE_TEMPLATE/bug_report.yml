@@ -1,0 +1,31 @@
+name: Bug report
+description: File a bug report
+labels: [bug]
+body:
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: What happened? What did you expect?
+      placeholder: Clear and concise description...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps to reproduce the behavior
+      placeholder: 1) ... 2) ... 3) ...
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Paste relevant logs or screenshots
+  - type: input
+    id: version
+    attributes:
+      label: Version/commit
+      description: Branch/commit hash if known

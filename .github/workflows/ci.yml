@@ -1,0 +1,19 @@
+name: CI
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Windows batch files (syntax lint)
+        run: |
+          echo "No batch linter configured yet. Future: run basic checks."
+      - name: Shellcheck bash scripts
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
+        continue-on-error: true
