@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning (when formal releases begin).
 
 ## [Unreleased]
+- Docs: Align commands to scripts\ paths; fix outdated names and examples
+- Docs: Voting window clarified to 5 minutes
+- Scripts: Add AWS CLI presence check and AWS_PAGER disable in start/shutdown
+- Scripts: Add SSH key existence check before voting
 - Planned: examples/, tools/ utilities maturation
 - Planned: setup wizard and sync helpers
 

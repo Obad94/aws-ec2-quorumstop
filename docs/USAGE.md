@@ -22,7 +22,7 @@ This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
 
 2. **Expected output**:
    ```
-   === EC2 Democratic Shutdown - Server Startup ===
+   === AWS EC2 QuorumStop - Server Startup ===
    [1/3] Checking current server status...
    Current server status: [stopped]
    [2/3] Server is stopped. Starting now...
@@ -50,7 +50,7 @@ This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
    - System checks server status
    - Connects to server via SSH
    - Sends vote notifications to all logged-in users
-   - Waits for team votes (60 seconds)
+   - Waits for team votes (5 minutes)
    - Makes democratic decision
 
 3. **Possible outcomes**:

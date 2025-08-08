@@ -6,6 +6,16 @@ REM AWS EC2 QuorumStop - Server Startup
 REM Starts EC2 instance and updates configuration
 REM ============================================
 
+REM Disable AWS CLI pager and verify CLI is available
+set "AWS_PAGER="
+aws --version >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: AWS CLI not installed or not in PATH
+    echo See https://aws.amazon.com/cli/ and run scripts\test_aws.bat to diagnose
+    pause
+    exit /b 1
+)
+
 REM Resolve script directory so paths work from anywhere
 set "SCRIPT_DIR=%~dp0"
 

@@ -164,7 +164,7 @@ cd aws-ec2-quorumstop
 ### Test AWS Connectivity
 
 ```batch
-test_aws.bat
+scripts\test_aws.bat
 ```
 
 Expected output:
@@ -190,7 +190,7 @@ SUCCESS: All AWS commands working!
 ### Test Configuration
 
 ```batch
-view_config.bat
+scripts\view_config.bat
 ```
 
 This should display your current configuration without errors.
@@ -199,13 +199,13 @@ This should display your current configuration without errors.
 
 ```batch
 # Start server (if stopped)
-start_server.bat
+scripts\start_server.bat
 
 # View current status
-view_config.bat
+scripts\view_config.bat
 
 # Test shutdown process (will prompt for vote)
-shutdown_server.bat
+scripts\shutdown_server.bat
 ```
 
 ## 🏗️ Step 7: Server-Side Setup
@@ -324,7 +324,7 @@ sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 
 1. **Start server** (if stopped):
    ```batch
-   start_server.bat
+   scripts\start_server.bat
    ```
 
 2. **SSH into server** to simulate multiple users:
@@ -334,7 +334,7 @@ sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 
 3. **From another command prompt, test shutdown**:
    ```batch
-   shutdown_server_debug.bat
+   scripts\shutdown_server.bat
    ```
 
 4. **Vote from the SSH session**:
@@ -358,7 +358,7 @@ Your EC2 Democratic Shutdown System is now ready. Next steps:
 
 - Check our [Troubleshooting Guide](TROUBLESHOOTING.md)
 - [Open an issue](https://github.com/Obad94/aws-ec2-quorumstop/issues)
-- Review your configuration with `view_config.bat`
+- Review your configuration with `scripts\view_config.bat`
 
 ---
 
