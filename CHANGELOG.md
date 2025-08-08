@@ -5,17 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning (when formal releases begin).
 
 ## [Unreleased]
-- Docs: Align commands to scripts\ paths; fix outdated names and examples
-- Docs: Voting window clarified to 5 minutes
-- Scripts: Add AWS CLI presence check and AWS_PAGER disable in start/shutdown
-- Scripts: Add SSH key existence check before voting
-- Planned: examples/, tools/ utilities maturation
-- Planned: setup wizard and sync helpers
+- No unreleased changes.
+
+## [0.1.1] - 2025-08-08
+- Docs: Align PROJECT_STRUCTURE to reflect current files; standardize SSH user (ubuntu)
+- Docs: Clarify initiator voting behavior in USAGE; add PowerShell Test-NetConnection tip
+- Docs: Update INSTALLATION and TROUBLESHOOTING to prefer PowerShell examples over telnet
+- Scripts: shutdown_server.bat guard when SERVER_IP is empty/None; clearer SSH failure guidance
+- Scripts: start_server.bat retries for public IP assignment after running
+- Server: vote_shutdown.sh harden vote dir perms (chmod 700) and clarify debug output
+- Planned: examples/ and tools/ utilities maturation
 
 ## [0.1.0] - 2025-08-08
 ### Added
-- Repository scaffolding for planned areas: `.github/`, `examples/`, `tools/`
-- Issue templates and minimal CI workflow
+- Repository scaffolding for planned areas: `examples/`, `tools/`
 
 ### Changed
 - Standardized project name to "AWS EC2 QuorumStop"

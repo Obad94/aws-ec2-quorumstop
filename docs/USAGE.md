@@ -11,7 +11,7 @@ This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
 | `scripts/view_config.bat` | Show configuration | Check settings/IP |
 | `scripts/test_aws.bat` | Test AWS connectivity | Troubleshooting |
 
-## 📅 Daily Workflow
+## 🗓️ Daily Workflow
 
 ### 🌅 Starting Your Work Day
 
@@ -48,7 +48,7 @@ This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
 
 2. **What happens**:
    - System checks server status
-   - Connects to server via SSH
+   - Connects to server via SSH (default user: `ubuntu`)
    - Sends vote notifications to all logged-in users
    - Waits for team votes (5 minutes)
    - Makes democratic decision
@@ -71,6 +71,12 @@ This guide covers daily operations and common workflows with AWS EC2 QuorumStop.
    ```
 
 ## 🗳️ Voting Process
+
+### Initiator Voting Behavior
+
+- The initiator’s IP is used to start the voting session.
+- The initiator is not automatically counted as a YES vote.
+- If the initiator is also logged in to the server, they may cast a vote like any other user using `vote_shutdown yes|no`.
 
 ### For the Person Requesting Shutdown
 
@@ -151,7 +157,7 @@ vote_shutdown status
 📊 FINAL VOTING RESULTS
 ✅ YES votes: 3
 ❌ NO votes: 0 (including 0 non-voters)
-🎯 VOTE PASSED: Server will shutdown in 30 seconds!
+🏁 VOTE PASSED: Server will shutdown in 30 seconds!
 💾 SAVE YOUR WORK NOW!
 ```
 
@@ -247,282 +253,47 @@ Shows:
    scripts\view_config.bat
    ```
 
-## 🔧 Common Operations
+## 🧰 Common Operations
 
 ### Check Server Status Without Starting
 
-```batch
-# Use AWS CLI directly
+```powershell
+# PowerShell (recommended on Windows)
 aws ec2 describe-instances --instance-ids i-1234567890abcdef0 --query "Reservations[0].Instances[0].State.Name" --output text
 ```
 
 ### Get Current Server IP
 
-```batch
-# Use AWS CLI directly  
+```powershell
 aws ec2 describe-instances --instance-ids i-1234567890abcdef0 --query "Reservations[0].Instances[0].PublicIpAddress" --output text
 ```
 
 ### Force Stop Server (Emergency)
 
-```batch
-# Use AWS CLI directly (bypasses voting)
+```powershell
 aws ec2 stop-instances --instance-ids i-1234567890abcdef0
 ```
 
-**⚠️ Warning**: Only use emergency stop in urgent situations. It bypasses the democratic process.
+⚠️ Warning: Only use emergency stop in urgent situations. It bypasses the democratic process.
 
 ### Connect to Server Manually
 
-```batch
-# Get the command from scripts/view_config.bat, or:
+```powershell
 ssh -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
 ```
 
-## 📊 Understanding Costs
+## 💸 Understanding Costs
 
-### When You're Charged
+- Compute charges apply only while running
+- EBS charges apply even when stopped
 
-- ✅ **EC2 Compute**: Only when instance is running
-- ✅ **EBS Storage**: Always (even when stopped) - ~$0.10/GB/month
-- ✅ **Data Transfer**: Outbound internet traffic
-- ❌ **Stopped Instance**: No compute charges
+## 🚨 Troubleshooting Tips (Windows)
 
-### Cost Examples
-
-**t3.medium instance**:
-- Running 24/7: ~$35/month
-- Running 8 hours/day (work hours): ~$12/month
-- Running only when needed: ~$5-15/month
-- EBS storage (20GB): ~$2/month (always)
-
-### Maximize Savings
-
-1. **Use democratic shutdown** - Avoid leaving server running unnecessarily
-2. **Coordinate with team** - Plan work hours to minimize overlapping usage
-3. **Consider hibernation** - For faster startups (supported instance types only)
-
-## 🚨 Troubleshooting Common Issues
-
-### SSH Connection Fails
-
-**Problem**: Cannot connect to server
-```
-ssh: connect to host 52.89.123.45 port 22: Connection refused
-```
-
-**Solutions**:
-1. **Check server status**:
-   ```batch
-   scripts/start_server.bat  # This will show current status
-   ```
-
-2. **Verify IP is current**:
-   ```batch
-   scripts/view_config.bat  # Shows configured IP
-   ```
-
-3. **Check security group**:
-   - AWS Console → EC2 → Security Groups
-   - Ensure your IP has SSH (port 22) access
-
-4. **Wait for server to fully boot**:
-   - Server takes 30-60 seconds to become ready after "running" state
-
-### Voting Doesn't Work
-
-**Problem**: Vote script fails or times out
-
-**Solutions**:
-1. **Check SSH connectivity first**:
-   ```batch
-   ssh -i "C:\path\to\key.pem" ubuntu@SERVER-IP
-   ```
-
-2. **Verify vote script exists on server**:
-   ```bash
-   # On the server:
-   ls -la /home/ubuntu/vote_shutdown.sh
-   ./vote_shutdown.sh debug
-   ```
-
-3. **Re-install vote script**:
-   - Follow Step 7 in [Installation Guide](INSTALLATION.md)
-
-### AWS CLI Errors
-
-**Problem**: AWS commands fail
-
-**Solutions**:
-1. **Test AWS CLI**:
-   ```batch
-   scripts/test_aws.bat
-   ```
-
-2. **Reconfigure credentials**:
-   ```batch
-   aws configure
-   ```
-
-3. **Check permissions**:
-   - Your AWS user needs EC2 permissions
-   - Minimum required: `ec2:DescribeInstances`, `ec2:StartInstances`, `ec2:StopInstances`
-
-### Server Won't Start
-
-**Problem**: `scripts/start_server.bat` fails
-
-**Common causes**:
-1. **Instance doesn't exist**: Check INSTANCE_ID in config.bat
-2. **Wrong region**: Check AWS_REGION in config.bat  
-3. **No permissions**: Your AWS user can't start instances
-4. **Instance limit reached**: AWS account limits
-
-**Debug steps**:
-```batch
-# Check if instance exists
-aws ec2 describe-instances --instance-ids i-your-instance-id
-
-# Check your permissions
-aws iam get-user
-
-# Check region
-aws configure get region
-```
-
-## 🔄 Advanced Workflows
-
-### Multi-Team Setup
-
-If you have multiple teams using different servers:
-
-1. **Create separate directories**:
-   ```
-   C:\ec2-scripts\team-frontend\
-   C:\ec2-scripts\team-backend\
-   C:\ec2-scripts\team-devops\
-   ```
-
-2. **Each directory has its own**:
-   - `config.bat` (different INSTANCE_ID)
-   - All script files
-   - Team-specific settings
-
-3. **Switch between teams**:
-   ```batch
-   cd C:\ec2-scripts\team-frontend\
-   scripts/start_server.bat
-   ```
-
-### Scheduled Operations
-
-**Auto-start at 9 AM (optional)**:
-1. Use Windows Task Scheduler
-2. Create task: Run `scripts/start_server.bat` at 9 AM weekdays
-3. Configure: "Run whether user is logged on or not"
-
-**Reminder shutdown at 6 PM**:
-1. Create task: Display message at 6 PM
-2. Message: "Consider running shutdown_server.bat to save costs"
-3. Team decides whether to actually shut down
-
-### Integration with Team Chat
-
-**Slack notifications** (advanced):
-1. Add webhook to vote script
-2. Notify team channel when votes are requested
-3. Share results in team chat
-
-Example webhook addition to server script:
-```bash
-# Add to vote_shutdown.sh
-curl -X POST -H 'Content-type: application/json' \
---data '{"text":"🗳️ Server shutdown vote requested. Check your terminal!"}' \
-YOUR_SLACK_WEBHOOK_URL
-```
-
-## 📈 Monitoring and Analytics
-
-### Track Usage Patterns
-
-**Log voting results**:
-```batch
-# Add to shutdown_server.bat (after vote result)
-echo %date% %time% - Vote by %YOUR_NAME% - Result: %VOTE_RESULT% >> shutdown_log.txt
-```
-
-**Analyze costs**:
-- Check AWS Cost Explorer monthly
-- Compare months with/without democratic shutdown
-- Track which team members initiate most shutdowns
-
-### Weekly Team Review
-
-**Suggested agenda**:
-1. Review shutdown log for the week
-2. Discuss any failed votes (why?)
-3. Adjust team agreements if needed
-4. Check AWS costs vs. previous period
-
-## 🤝 Team Agreements
-
-### Recommended Team Policies
-
-1. **Daily shutdown**: Team agrees to shut down by 7 PM unless actively working
-2. **Weekend shutdown**: Always shut down Friday evening
-3. **Emergency override**: Senior developer can force shutdown in cost emergencies
-4. **Voting etiquette**: Respond to votes within 60 seconds when possible
-5. **Work announcements**: Notify team before starting late/weekend work
-
-### Sample Team Agreement
-
-```
-Our EC2 Democratic Shutdown Agreement:
-
-✅ DO:
-- Vote promptly when you see shutdown requests
-- Announce if you'll be working late/weekends  
-- Respect majority vote decisions
-- Use start_server.bat at beginning of work day
-
-❌ DON'T:
-- Use emergency AWS console shutdown except in true emergencies
-- Leave server running overnight without team agreement
-- Ignore vote notifications
-- Force shutdown during others' active work
-
-🎯 GOALS:
-- Save 50%+ on AWS costs
-- Maintain team productivity  
-- Build collaborative infrastructure habits
-```
-
-## 🆘 Getting Help
-
-### Built-in Help
-
-```batch
-# Test your setup
-scripts\test_aws.bat
-
-# View current settings
-scripts\view_config.bat
-
-# Check if server is accessible
-ssh -i "%KEY_FILE%" ubuntu@%SERVER_IP% "echo 'Connection test successful'"
-```
-
-### External Resources
-
-- [AWS EC2 Documentation](https://docs.aws.amazon.com/ec2/)
-- [AWS CLI Documentation](https://docs.aws.amazon.com/cli/)
-- [SSH Connection Troubleshooting](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html)
-
-### Community Support
-
-- 🐛 [Report Issues](https://github.com/Obad94/aws-ec2-quorumstop/issues)
-- 💬 [Ask Questions](https://github.com/Obad94/aws-ec2-quorumstop/discussions)
-- 📚 [Check Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki)
+- Test SSH port reachability without telnet:
+  ```powershell
+  Test-NetConnection -ComputerName YOUR-SERVER-IP -Port 22
+  ```
+- If `BatchMode=yes` fails in shutdown, the key may be passphrase-protected. Use an unencrypted key for automation or an ssh-agent.
 
 ---
 

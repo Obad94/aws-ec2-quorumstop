@@ -29,8 +29,7 @@ DEV_NAMES["203.0.113.30"]="Carol"     # Developer 3
 # ============================================
 
 get_connected_users() {
-    # Get active SSH connections with their IP addresses
-    # Only get truly active connections (not idle sessions)
+    # Get active SSH connections IPs (from 'who')
     who | awk '{print $5}' | tr -d '()' | sort | uniq | grep -v "^$"
 }
 
@@ -107,7 +106,7 @@ send_final_results() {
     wall "============================================"
     
     if [ "$result" = "PASS" ]; then
-        wall "🎯 VOTE PASSED: Server will shutdown in 30 seconds!"
+        wall "🏁 VOTE PASSED: Server will shutdown in 30 seconds!"
         wall "💾 SAVE YOUR WORK NOW!"
     else
         wall "🛡️  VOTE FAILED: Server will continue running."
@@ -127,11 +126,12 @@ handle_vote() {
     local user_name=$(get_dev_name "$user_ip")
     local vote_file="$VOTE_DIR/${user_name}_${user_ip}_vote"
     
+    # Ensure secure vote directory
+    mkdir -p "$VOTE_DIR"
+    chmod 700 "$VOTE_DIR" 2>/dev/null || true
+
     # Debug output for troubleshooting
     echo "Debug: Detected IP: $user_ip, User: $user_name"
-    
-    # Create vote directory if it doesn't exist
-    mkdir -p "$VOTE_DIR"
     
     case "$vote" in
         yes|y|YES|Y)
@@ -161,6 +161,7 @@ initiate_vote() {
     
     # Clean up any previous voting session
     mkdir -p "$VOTE_DIR"
+    chmod 700 "$VOTE_DIR" 2>/dev/null || true
     rm -f "$VOTE_DIR"/*
     
     # Get list of connected users
@@ -239,13 +240,13 @@ initiate_vote() {
     echo "✅ YES votes: $yes_votes"
     echo "❌ NO votes: $no_votes (explicit)"
     echo "😶 Non-voters: $non_voters (counted as NO)"
-    echo "📊 Total NO: $total_no"
+    echo "📈 Total NO: $total_no"
     echo "🎯 Required: YES votes must exceed total NO votes"
     
     # Make decision: YES must be greater than total NO
     if [ $yes_votes -gt $total_no ]; then
         echo ""
-        echo "🎯 RESULT: VOTE PASSED - Shutdown approved!"
+        echo "🏁 RESULT: VOTE PASSED - Shutdown approved!"
         send_final_results "$yes_votes" "$total_no" "$non_voters" "PASS"
         sleep 30  # Grace period for users to save work
         rm -rf "$VOTE_DIR"
@@ -280,18 +281,11 @@ show_debug_info() {
     fi
     echo "  ℹ️  who am i method: $(who am i | awk '{print $5}' | tr -d '()')"
     echo ""
-    echo "👥 Active Connections:"
-    echo "  who command output:"
+    echo "👥 Active Connections (from 'who'):"
     who | sed 's/^/    /'
     echo ""
-    echo "  w command output:"
-    w | sed 's/^/    /'
-    echo ""
-    echo "🔗 Connected IP Addresses:"
-    echo "  From who command:"
+    echo "🔗 Connected IP Addresses (from 'who'):"
     who | awk '{print $5}' | tr -d '()' | sort | uniq | sed 's/^/    /'
-    echo "  From w command:"
-    w -h | awk '{print $2}' | sort | uniq | sed 's/^/    /'
     echo ""
     echo "👨‍👩‍👧‍👦 Team Member Mappings:"
     for ip in "${!DEV_NAMES[@]}"; do

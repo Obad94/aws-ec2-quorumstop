@@ -31,10 +31,13 @@ call "%SCRIPT_DIR%config.bat"
 echo Loaded configuration for user: %YOUR_NAME%
 
 echo === AWS EC2 QuorumStop - Server Startup ===
+
 echo.
 
 echo [1/3] Checking current server status...
+
 echo Instance ID: %INSTANCE_ID%
+
 echo Current config IP: %SERVER_IP%
 
 REM Get server status
@@ -121,18 +124,27 @@ if "%SERVER_STATUS%"=="running" (
     echo SUCCESS: Server is already running!
     echo Getting current IP address...
     
+    set IP_TRIES=0
+    :GET_RUNNING_IP
     aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_ip.tmp"
     if exist "%TEMP%\qs_ip.tmp" (
         set /p CURRENT_IP=<"%TEMP%\qs_ip.tmp"
-        REM Trim spaces from IP
         for /f "tokens=* delims= " %%a in ("!CURRENT_IP!") do set CURRENT_IP=%%a
         for /l %%a in (1,1,100) do if "!CURRENT_IP:~-1!"==" " set CURRENT_IP=!CURRENT_IP:~0,-1!
-        
-        if not "!CURRENT_IP!"=="None" (
+        del "%TEMP%\qs_ip.tmp" 2>nul
+        if /i "!CURRENT_IP!"=="None" (
+            if !IP_TRIES! lss 4 (
+                set /a IP_TRIES+=1
+                echo IP not assigned yet. Retrying (!IP_TRIES!/4)...
+                timeout /t 5 /nobreak >nul
+                goto :GET_RUNNING_IP
+            ) else (
+                echo Server is running but no public IP assigned yet
+                echo Try again shortly or ensure instance has a public IP/Elastic IP
+            )
+        ) else (
             echo Server IP: !CURRENT_IP!
             echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@!CURRENT_IP!
-            
-            REM Update config if IP changed
             if not "!CURRENT_IP!"=="%SERVER_IP%" (
                 echo.
                 echo IP has changed from %SERVER_IP% to !CURRENT_IP!
@@ -142,10 +154,7 @@ if "%SERVER_STATUS%"=="running" (
             ) else (
                 echo IP unchanged - configuration is current
             )
-        ) else (
-            echo Server is running but no public IP assigned yet
         )
-        del "%TEMP%\qs_ip.tmp"
     )
     echo.
     echo Server is ready for use!
@@ -204,17 +213,27 @@ if "%SERVER_STATUS%"=="stopped" (
     if "%CURRENT_STATUS%"=="running" (
         echo.
         echo SUCCESS: Server is now running!
-        
+        echo.
         echo Getting new IP address...
+        set NEWIP_TRIES=0
+        :GET_NEW_IP
         aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_new_ip.tmp"
         if exist "%TEMP%\qs_new_ip.tmp" (
             set /p NEW_IP=<"%TEMP%\qs_new_ip.tmp"
-            REM Trim spaces from IP
             for /f "tokens=* delims= " %%a in ("!NEW_IP!") do set NEW_IP=%%a
             for /l %%a in (1,1,100) do if "!NEW_IP:~-1!"==" " set NEW_IP=!NEW_IP:~0,-1!
-            
-            if not "!NEW_IP!"=="None" (
-                echo.
+            del "%TEMP%\qs_new_ip.tmp" 2>nul
+            if /i "!NEW_IP!"=="None" (
+                if !NEWIP_TRIES! lss 6 (
+                    set /a NEWIP_TRIES+=1
+                    echo IP not assigned yet. Retrying (!NEWIP_TRIES!/6)...
+                    timeout /t 5 /nobreak >nul
+                    goto :GET_NEW_IP
+                ) else (
+                    echo Server running but IP not assigned yet
+                    echo Ensure the instance has a public IP or associate an Elastic IP
+                )
+            ) else (
                 echo New server IP: !NEW_IP!
                 echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@!NEW_IP!
                 echo.
@@ -223,10 +242,7 @@ if "%SERVER_STATUS%"=="stopped" (
                 echo Configuration updated successfully!
                 echo.
                 echo All scripts will now use the new IP automatically
-            ) else (
-                echo Server running but IP not assigned yet
             )
-            del "%TEMP%\qs_new_ip.tmp"
         )
         echo.
         echo Server is ready for use!

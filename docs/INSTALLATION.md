@@ -12,7 +12,7 @@ Before starting, ensure you have:
 - [ ] Basic familiarity with command prompt
 - [ ] Team members' public IP addresses
 
-## 🔧 Step 1: Install AWS CLI
+## 🛠️ Step 1: Install AWS CLI
 
 ### Download and Install
 
@@ -28,7 +28,7 @@ aws --version
 ```
 Expected output: `aws-cli/2.x.x Python/3.x.x Windows/10 exe/AMD64`
 
-## 🔑 Step 2: Configure AWS Credentials
+## 🔐 Step 2: Configure AWS Credentials
 
 ### Get Your AWS Credentials
 
@@ -93,7 +93,9 @@ Your EC2 security group needs these rules:
 
 Each team member should visit: [whatismyipaddress.com](https://whatismyipaddress.com)
 
-## 🔐 Step 4: Set Up SSH Access
+## 🔑 Step 4: Set Up SSH Access
+
+Default user in this project: `ubuntu` (Ubuntu AMIs). Some AMIs use `ec2-user` (Amazon Linux).
 
 ### Option A: Generate New SSH Key Pair
 
@@ -114,8 +116,10 @@ If you have a `.ppk` file:
 
 ### Test SSH Connection
 
-```batch
+```powershell
 ssh -i "C:\path\to\your-key.pem" ubuntu@YOUR-EC2-PUBLIC-IP
+# If it fails, check port reachability:
+Test-NetConnection -ComputerName YOUR-EC2-PUBLIC-IP -Port 22
 ```
 
 ## 📁 Step 5: Download and Configure Scripts
@@ -215,7 +219,7 @@ scripts\shutdown_server.bat
 SSH into your EC2 instance and set up the voting system:
 
 ```bash
-# Connect to your server
+# Connect to your server (from Windows PowerShell/Cmd, adjust path)
 ssh -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
 ```
 
@@ -248,6 +252,15 @@ nano /home/ubuntu/vote_shutdown.sh
 chmod +x /home/ubuntu/vote_shutdown.sh
 ```
 
+### Create System-Wide Command (Optional)
+
+```bash
+# Create symlink for easy access (requires sudo)
+sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
+
+# Now users can run just "vote_shutdown" from anywhere
+```
+
 ### Configure Your Team
 
 Edit the script to add your team members:
@@ -264,15 +277,6 @@ DEV_NAMES["YOUR_IP_3"]="YourName3"     # Replace with actual IP and name
 # Add more team members as needed
 
 # Save and exit
-```
-
-### Create System-Wide Command (Optional)
-
-```bash
-# Create symlink for easy access
-sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
-
-# Now users can run just "vote_shutdown" from anywhere
 ```
 
 ### Test the Installation
@@ -293,10 +297,6 @@ sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 📍 IP Detection Methods:
   ✅ SSH_CLIENT method: 203.0.113.10
   ✅ SSH_CONNECTION method: 203.0.113.10
-
-👥 Active Connections:
-  who command output:
-    ubuntu   pts/0        2024-01-15 10:30 (203.0.113.10)
 
 👨‍👩‍👧‍👦 Team Member Mappings:
   203.0.113.10 → YourName1
@@ -328,7 +328,7 @@ sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
    ```
 
 2. **SSH into server** to simulate multiple users:
-   ```batch
+   ```powershell
    ssh -i "C:\path\to\your-key.pem" ubuntu@YOUR-SERVER-IP
    ```
 
@@ -340,7 +340,7 @@ sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 4. **Vote from the SSH session**:
    ```bash
    # In the SSH session, when prompted:
-   echo yes > /tmp/shutdown_vote/$(whoami)_vote
+   vote_shutdown yes
    ```
 
 If everything works, you should see the voting process complete successfully!

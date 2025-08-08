@@ -2,7 +2,7 @@
 
 This guide helps you diagnose and fix common issues with AWS EC2 QuorumStop.
 
-## 🔍 Quick Diagnosis
+## 🔎 Quick Diagnosis
 
 Run through these steps first to identify the problem category:
 
@@ -31,7 +31,7 @@ dir scripts\config.bat
 
 ---
 
-## 🔧 AWS CLI Issues
+## 🛠️ AWS CLI Issues
 
 ### Problem: "AWS CLI not found" or "'aws' is not recognized"
 
@@ -150,8 +150,8 @@ aws ec2 describe-regions --query "Regions[*].RegionName" --output table
 **Diagnosis steps**:
 
 1. **Check server status**:
-   ```batch
-   aws ec2 describe-instances --instance-ids i-your-instance-id --query "Reservations[0].Instances[0].State.Name"
+   ```powershell
+   aws ec2 describe-instances --instance-ids i-your-instance-id --query "Reservations[0].Instances[0].State.Name" --output text
    ```
    - Should show "running", not "stopped" or "pending"
 
@@ -161,10 +161,9 @@ aws ec2 describe-regions --query "Regions[*].RegionName" --output table
    # Check if SERVER_IP matches actual public IP
    ```
 
-3. **Test connectivity**:
-   ```batch
-   # Test if port 22 is reachable (requires telnet)
-   telnet YOUR-SERVER-IP 22
+3. **Test connectivity (PowerShell)**:
+   ```powershell
+   Test-NetConnection -ComputerName YOUR-SERVER-IP -Port 22
    ```
 
 **Common solutions**:
@@ -192,13 +191,13 @@ Source: YOUR.PUBLIC.IP/32
 ### Solution 2: SSH Key Problems
 
 **Test SSH key**:
-```batch
+```powershell
 # Try connecting with verbose output
 ssh -v -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
 ```
 
 **Common key issues**:
-```batch
+```bash
 # Wrong permissions (if using WSL/Git Bash)
 chmod 600 /path/to/your/key.pem
 
@@ -206,7 +205,8 @@ chmod 600 /path/to/your/key.pem
 # Use PuTTYgen to convert .ppk to .pem if needed
 
 # Wrong user
-# Try 'ec2-user' instead of 'ubuntu' (depends on AMI)
+# Default in this project: ubuntu (Ubuntu AMIs)
+# Some AMIs use 'ec2-user' (Amazon Linux)
 ssh -i "key.pem" ec2-user@YOUR-SERVER-IP
 ```
 
@@ -214,7 +214,7 @@ ssh -i "key.pem" ec2-user@YOUR-SERVER-IP
 
 **Wait for full boot**:
 - Server shows "running" but SSH not ready yet
-- Wait 2-3 minutes after "running" status
+- Wait 2-3 minutes after "running" state
 - Check system log in AWS Console
 
 ---
@@ -308,7 +308,7 @@ DEV_NAMES["YOUR_REAL_IP_3"]="ActualName3"
 # Check script version by looking for enhanced features
 grep "🗳️" /home/ubuntu/vote_shutdown.sh
 
-# If no emojis found, update to enhanced version
+# If not found, update to enhanced version
 wget -O /home/ubuntu/vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 
 # Make executable and configure team
@@ -335,15 +335,14 @@ vote_shutdown help
 ### Problem: SSH connection works but voting fails
 
 **Check BatchMode SSH**:
-```batch
+```powershell
 # Test batch mode SSH (used by voting)
-ssh -o BatchMode=yes -i "your-key.pem" ubuntu@YOUR-SERVER-IP "echo 'Batch mode test'"
+ssh -o BatchMode=yes -i "your-key.pem" ubuntu@SERVER-IP "echo 'Batch mode test'"
 ```
 
 **If batch mode fails**:
 - SSH key might require passphrase (not supported in batch mode)
-- Generate new key without passphrase
-- Or use ssh-agent (advanced)
+- Generate new key without passphrase for automation, or use ssh-agent
 
 ---
 
@@ -380,7 +379,7 @@ dir *.bat
 **Cause**: Double-clicking .bat files
 
 **Solution**: 
-- Always run from Command Prompt
+- Always run from Command Prompt or PowerShell
 - Or add `pause` command at end of scripts
 
 ### Problem: "The filename, directory name, or volume label syntax is incorrect"

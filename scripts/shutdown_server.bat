@@ -31,6 +31,7 @@ call "%SCRIPT_DIR%config.bat"
 echo Loaded configuration for user: %YOUR_NAME%
 
 echo === AWS EC2 QuorumStop ===
+
 echo.
 
 REM Check current server status
@@ -138,7 +139,9 @@ pause
 exit /b 1
 
 :SERVER_RUNNING
+
 echo Server is running - proceeding with democratic shutdown
+
 echo.
 
 REM Update IP if needed
@@ -158,6 +161,20 @@ if not errorlevel 1 (
 )
 del "%TEMP%\qs_current_ip.tmp" 2>nul
 
+REM Guard: ensure we have a usable server IP before SSH
+if "%SERVER_IP%"=="" (
+    echo ERROR: Server IP is empty. Cannot initiate SSH for voting.
+    echo Run scripts\start_server.bat to refresh IP, then try again.
+    pause
+    exit /b 1
+)
+if /i "%SERVER_IP%"=="None" (
+    echo ERROR: Server IP not yet assigned. Cannot initiate SSH for voting.
+    echo Wait a few seconds and run scripts\start_server.bat again.
+    pause
+    exit /b 1
+)
+
 REM Conduct democratic vote
 
 echo Starting democratic vote process...
@@ -171,11 +188,30 @@ if not exist "%KEY_FILE%" (
 )
 
 echo Connecting to server: %SERVER_IP%
+
 echo Your IP: %YOUR_IP%
+
 echo.
 
 ssh -o StrictHostKeyChecking=no -o BatchMode=yes -i "%KEY_FILE%" %SERVER_USER%@%SERVER_IP% "%SERVER_VOTE_SCRIPT% initiate %YOUR_IP%"
 set VOTE_RESULT=%errorlevel%
+
+REM Detect SSH transport/auth failures (commonly 255)
+if %VOTE_RESULT%==255 (
+    echo.
+    echo ERROR: SSH connection failed while initiating the vote.
+    echo Possible causes:
+    echo  - Wrong KEY_FILE or passphrase-protected key (BatchMode=yes)
+    echo  - Server IP or user incorrect (current user: %SERVER_USER%)
+    echo  - Security Group blocks your IP on port 22
+    echo  - Server not fully ready for SSH
+    echo.
+    echo Tips:
+    echo  - Test: ssh -v -i "%KEY_FILE%" %SERVER_USER%@%SERVER_IP%
+    echo  - If key has a passphrase, use an unencrypted key for automation
+    pause
+    exit /b 1
+)
 
 if %VOTE_RESULT%==0 (
     echo.
@@ -227,8 +263,11 @@ if %VOTE_RESULT%==0 (
 )
 
 echo.
+
 echo Democratic shutdown process completed.
+
 pause
+
 exit /b 0
 
 REM ============================================

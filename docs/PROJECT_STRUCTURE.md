@@ -9,6 +9,7 @@ aws-ec2-quorumstop/
 ├── README.md                     # Main project documentation
 ├── LICENSE                       # MIT License
 ├── CONTRIBUTING.md               # Contribution guidelines
+├── CHANGELOG.md                  # Notable changes per release
 │
 ├── scripts/                      # Windows client scripts (canonical)
 │   ├── config.bat                # Configuration file (edit this)
@@ -27,47 +28,51 @@ aws-ec2-quorumstop/
 │   ├── USAGE.md                  # Usage guide
 │   ├── SECURITY.md               # Security best practices
 │   └── TROUBLESHOOTING.md        # Troubleshooting guide
+│
+├── examples/                     # Scaffolded examples (placeholders)
+│   ├── README.md
+│   └── team-3-developers/
+│       ├── README.md
+│       └── config.bat            # Sample (non-functional placeholder)
+│
+└── tools/                        # Scaffolded tools (stubs)
+    ├── README.md
+    ├── setup-wizard.bat          # Planned stub
+    └── sync-ip.bat               # Planned stub
 ```
 
 ## Planned Additions (help wanted)
 
 These do not exist yet. They are documented here with guidelines for contributors.
 
-- CHANGELOG.md (planned)
-  - Purpose: Track notable changes per release.
-  - Guideline: Keep to Keep a Changelog format; update on each PR that changes behavior.
+- .github/
+  - ISSUE_TEMPLATE/bug_report.yml (planned)
+  - ISSUE_TEMPLATE/feature_request.yml (planned)
+  - workflows/ci.yml (planned; shellcheck + basic batch validation)
 
-- .github/ (scaffolded)
-  - ISSUE_TEMPLATE/bug_report.yml (added)
-  - ISSUE_TEMPLATE/feature_request.yml (added)
-  - workflows/ci.yml (added; minimal shellcheck + placeholder batch validation)
+- Examples (upgrade)
+  - Provide a minimal working `config.bat` sample for a 2–3 developer team (no secrets)
 
-- examples/ (scaffolded)
-  - README.md (added)
-  - team-3-developers/README.md (added)
-  - team-3-developers/config.bat (sample, non-functional placeholder)
-
-- tools/ (scaffolded)
-  - README.md (added)
-  - setup-wizard.bat (stub)
-  - sync-ip.bat (stub)
+- Tools (upgrade)
+  - Implement `setup-wizard.bat` (interactive config + AWS checks)
+  - Implement `sync-ip.bat` (update SERVER_IP via AWS CLI)
 
 If you’d like to pick one of these up, open an issue to discuss scope and design.
 
 ## Quick Start
 
 1) Launch EC2 instance
-- Use Amazon Linux 2, t2.micro (or larger). Allow SSH (22) from your IP.
+- Use Ubuntu (e.g., 22.04 LTS), t2.micro (or larger). Allow SSH (22) from your IP.
 
 2) Connect to EC2
 ```bash
-ssh -i "your-key.pem" ec2-user@your-ec2-public-dns
+ssh -i "your-key.pem" ubuntu@your-ec2-public-dns
 ```
 
 3) Install dependencies (on EC2)
 ```bash
-sudo yum update -y
-sudo yum install -y git aws-cli
+sudo apt update -y
+sudo apt install -y git awscli
 ```
 
 4) Clone the repository
@@ -78,7 +83,7 @@ cd aws-ec2-quorumstop
 
 5) Configure the client (Windows)
 - Current: Edit `scripts/config.bat` and set your instance ID, region, key file, and team members. See `docs/CONFIGURATION.md`.
-- Planned: Copy from `examples/team-3-developers/config.bat` once examples are added.
+- Planned: Copy from `examples/team-3-developers/config.bat` once examples are upgraded to a working sample.
 
 6) Setup wizard (planned)
 - tools/setup-wizard.bat will guide config creation and AWS checks. Until then, follow step 5 and run `scripts/test_aws.bat`.
