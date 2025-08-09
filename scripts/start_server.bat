@@ -27,7 +27,9 @@ if not exist "%SCRIPT_DIR%config.bat" (
     exit /b 1
 )
 
-call "%SCRIPT_DIR%config.bat"
+call "%SCRIPT_DIR%config.bat" >nul 2>&1
+call "%SCRIPT_DIR%config.bat" show
+
 echo Loaded configuration for user: %YOUR_NAME%
 
 echo === AWS EC2 QuorumStop - Server Startup ===
@@ -151,6 +153,7 @@ if "%SERVER_STATUS%"=="running" (
                 echo IP has changed from %SERVER_IP% to !CURRENT_IP!
                 echo Updating configuration...
                 call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!CURRENT_IP!"
+                call "%SCRIPT_DIR%config.bat" >nul 2>&1
                 echo Configuration updated successfully
             )
         )
@@ -238,6 +241,7 @@ if "%SERVER_STATUS%"=="stopped" (
                 echo.
                 echo Updating configuration with new IP...
                 call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!NEW_IP!"
+                call "%SCRIPT_DIR%config.bat" >nul 2>&1
                 echo Configuration updated successfully!
                 echo.
                 echo All scripts will now use the new IP automatically

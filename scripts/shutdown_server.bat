@@ -27,7 +27,9 @@ if not exist "%SCRIPT_DIR%config.bat" (
     exit /b 1
 )
 
-call "%SCRIPT_DIR%config.bat"
+call "%SCRIPT_DIR%config.bat" >nul 2>&1
+call "%SCRIPT_DIR%config.bat" show
+
 echo Loaded configuration for user: %YOUR_NAME%
 
 echo === AWS EC2 QuorumStop ===
@@ -155,7 +157,7 @@ if not errorlevel 1 (
     if not "!ACTUAL_IP!"=="%SERVER_IP%" (
         echo Updating IP from %SERVER_IP% to !ACTUAL_IP!
         call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!ACTUAL_IP!"
-        call "%SCRIPT_DIR%config.bat"
+        call "%SCRIPT_DIR%config.bat" >nul 2>&1
         echo Configuration updated
     ) else (
         echo IP unchanged - not rewriting config
@@ -229,4 +231,23 @@ if %VOTE_RESULT%==0 (
         echo Cost Savings Information:
         echo - Server will stop charging once fully stopped
         echo - Use scripts\start_server.bat when ready to work again  
-        echo - New IP will be assigned on next
+        echo - New IP will be assigned on next start
+    ) else (
+        echo ERROR: Failed to send stop command to AWS
+        echo Please check your AWS permissions and instance ID
+        pause
+        exit /b 1
+    )
+
+    echo.
+    echo You can monitor server status in AWS Console:
+    echo https://%AWS_REGION%.console.aws.amazon.com/ec2/v2/home?region=%AWS_REGION#Instances:instanceId=%INSTANCE_ID%
+    pause
+    exit /b 0
+)
+
+echo.
+echo ERROR: Vote did not pass - server will continue running
+echo Please check with your team for the next steps
+pause
+exit /b 1
