@@ -38,7 +38,8 @@ if not defined TEAM_COUNT (
     call set "_NM=%%DEV%%n_NAME%%"
     if defined _IP (
       if not defined _NM set "_NM=Dev%%n"
-      call echo     DEV%%n_IP=%%_IP%% (%%_NM%%)
+      REM Escape parentheses inside code block
+      call echo     DEV%%n_IP=%%_IP%% ^(%%_NM%%^)
     )
     set "_IP=" & set "_NM="
   )
@@ -52,8 +53,8 @@ echo Team Detail Table:
 if not defined TEAM_COUNT (
   echo   (No TEAM_COUNT set)
 ) else (
-  echo   Index  IP                  Name
-  echo   -----  ------------------  -----------------
+  echo   Index  IP                 Name
+  echo   -----  -----------------  -----------------
   for /L %%n in (1,1,%TEAM_COUNT%) do (
     call set "_IP=%%DEV%%n_IP%%"
     call set "_NM=%%DEV%%n_NAME%%"
