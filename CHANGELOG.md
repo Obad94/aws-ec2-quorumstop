@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7] - 2025-08-09
+### Changed
+- Enhanced `scripts/config.bat` for simplified variable declarations and removed inline display logic.
+- Improved `scripts/start_server.bat` for robust execution and dynamic team entry display.
+### Fixed
+- Resolved formatting issues in team entries displayed by `scripts/start_server.bat`.
+
 ## [0.1.6] - 2025-08-09
 ### Added
 - `scripts/sync_team.bat` to dynamically generate and upload team.map to server.
