@@ -20,3 +20,12 @@ shutdown_log.txt
 
 # macOS
 .DS_Store
+
+# QuorumStop local runtime config (do not commit personal data)
+scripts/config.bat
+scripts/config.bat.bak
+scripts/config.*.local.bat
+
+# Private keys
+*.pem
+*.ppk

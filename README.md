@@ -60,6 +60,17 @@
 - SSH access to the EC2 instance
 - Team members' public IP addresses
 
+## Configuration
+
+Never commit your real `scripts/config.bat`. A tracked template `scripts/config.sample.bat` is provided. To configure:
+
+1. Copy `scripts/config.sample.bat` to `scripts/config.bat`.
+2. Run `tools/setup-wizard.bat` to populate/update values.
+3. The wizard creates/updates `scripts/config.bat` (ignored by git).
+4. Private keys (`*.pem`, `*.ppk`) are also ignored; store them securely.
+
+If you accidentally committed a real config previously, rotate any exposed credentials / keys and force-remove the file from history if necessary.
+
 ## 🏗️ Architecture
 
 ```
