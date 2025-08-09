@@ -41,6 +41,7 @@ echo [1/3] Checking current server status...
 echo Instance ID: %INSTANCE_ID%
 
 echo Current config IP: %SERVER_IP%
+if "%SERVER_IP%"=="0.0.0.0" echo (Note: Placeholder SERVER_IP=0.0.0.0 - will get real IP when instance runs)
 
 REM Get server status
 aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_status.tmp"
@@ -147,7 +148,11 @@ if "%SERVER_STATUS%"=="running" (
             echo Server IP: !CURRENT_IP!
             echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@!CURRENT_IP!
             if /i "!CURRENT_IP!"=="%SERVER_IP%" (
-                echo IP unchanged - skipping config rewrite
+                if "!CURRENT_IP!"=="0.0.0.0" (
+                    echo WARNING: Config still holds placeholder IP; try tools\sync-ip.bat or restart instance if needed.
+                ) else (
+                    echo IP unchanged - skipping config rewrite
+                )
             ) else (
                 echo.
                 echo IP has changed from %SERVER_IP% to !CURRENT_IP!

@@ -36,6 +36,9 @@ echo === AWS EC2 QuorumStop ===
 
 echo.
 
+REM If placeholder IP still present, warn early (will be re-fetched later if running)
+if "%SERVER_IP%"=="0.0.0.0" echo (Note: Placeholder SERVER_IP=0.0.0.0 - will refresh from AWS if instance is running)
+
 REM Check current server status
 echo Checking current server status...
 aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_server_status.tmp" 2>nul
@@ -175,6 +178,12 @@ if "%SERVER_IP%"=="" (
 if /i "%SERVER_IP%"=="None" (
     echo ERROR: Server IP not yet assigned. Cannot initiate SSH for voting.
     echo Wait a few seconds and run scripts\start_server.bat again.
+    pause
+    exit /b 1
+)
+if "%SERVER_IP%"=="0.0.0.0" (
+    echo ERROR: Placeholder IP (0.0.0.0) still set after refresh attempt.
+    echo Run scripts\start_server.bat or tools\sync-ip.bat to obtain the real IP.
     pause
     exit /b 1
 )
