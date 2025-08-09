@@ -4,6 +4,7 @@
 ### Added
 - `scripts/sync_team.bat` to dynamically generate and upload team.map to server.
 - Dynamic team map loading in `server/vote_shutdown.sh` to show updated developer names during voting.
+- `scripts/deploy_vote_script.bat` automated deployment & hashing for server vote script.
 ### Changed
 - `shutdown_server.bat` now calls `sync_team.bat` before initiating vote to ensure names are current.
 - Improved automation for syncing developer mappings between Windows and server scripts.
