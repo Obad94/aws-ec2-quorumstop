@@ -150,7 +150,7 @@ if "%SERVER_STATUS%"=="running" (
                 echo.
                 echo IP has changed from %SERVER_IP% to !CURRENT_IP!
                 echo Updating configuration...
-                call :UPDATE_CONFIG "!CURRENT_IP!"
+                call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!CURRENT_IP!"
                 echo Configuration updated successfully
             )
         )
@@ -237,7 +237,7 @@ if "%SERVER_STATUS%"=="stopped" (
                 echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@!NEW_IP!
                 echo.
                 echo Updating configuration with new IP...
-                call :UPDATE_CONFIG "!NEW_IP!"
+                call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!NEW_IP!"
                 echo Configuration updated successfully!
                 echo.
                 echo All scripts will now use the new IP automatically
@@ -278,105 +278,3 @@ echo.
 echo Cost reminder: Server charges resume when running
 pause
 exit /b 0
-
-REM ============================================
-REM Function to update configuration file
-REM ============================================
-:UPDATE_CONFIG
-REM Skip rewrite if new IP equals existing
-if /i "%~1"=="%SERVER_IP%" (
-  echo (No change in IP; config not rewritten)
-  goto :eof
-)
-
-set NEW_IP_ADDRESS=%~1
-REM Trim any spaces from the IP address
-for /f "tokens=* delims= " %%a in ("%NEW_IP_ADDRESS%") do set NEW_IP_ADDRESS=%%a
-for /l %%a in (1,1,100) do if "%NEW_IP_ADDRESS:~-1%"==" " set NEW_IP_ADDRESS=%NEW_IP_ADDRESS:~0,-1%
-
-set TIMESTAMP=%date% %time%
-
-REM Create temporary file with updated configuration
-(
-echo @echo off
-echo REM ============================================
-echo REM AWS EC2 QuorumStop - Configuration
-echo REM This file is automatically updated by scripts
-echo REM Last updated: %TIMESTAMP%
-echo REM ============================================
-echo.
-echo REM =============================
-echo REM AWS Configuration
-echo REM =============================
-echo set INSTANCE_ID=%INSTANCE_ID%
-echo set AWS_REGION=%AWS_REGION%
-echo.
-echo REM =============================
-echo REM Server Connection ^(Dynamic^)
-echo REM =============================
-echo set SERVER_IP=%NEW_IP_ADDRESS%
-echo set KEY_FILE=%KEY_FILE%
-echo.
-echo REM =============================
-echo REM Team IP Mappings
-echo REM =============================
-echo set DEV1_IP=%DEV1_IP%
-echo set DEV2_IP=%DEV2_IP%
-echo set DEV3_IP=%DEV3_IP%
-echo.
-echo REM =============================
-echo REM Current User Configuration
-echo REM =============================
-echo set YOUR_NAME=%YOUR_NAME%
-echo set YOUR_IP=%YOUR_IP%
-echo.
-echo REM =============================
-echo REM Server Configuration
-echo REM =============================
-echo set SERVER_VOTE_SCRIPT=%SERVER_VOTE_SCRIPT%
-echo set SERVER_USER=%SERVER_USER%
-echo.
-echo REM =============================
-echo REM Display Configuration
-echo REM =============================
-echo if "%%1"=="show" ^(
-echo     echo ============================================
-echo     echo AWS EC2 QuorumStop - Configuration
-echo     echo ============================================
-echo     echo.
-echo     echo AWS Settings:
-echo     echo   Instance ID: %%INSTANCE_ID%%
-echo     echo   Region: %%AWS_REGION%%
-echo     echo.
-echo     echo Server Connection:
-echo     echo   IP Address: %%SERVER_IP%%
-echo     echo   SSH Key: %%KEY_FILE%%
-echo     echo   User: %%SERVER_USER%%
-echo     echo.
-echo     echo Team IP Mappings:
-echo     echo   Developer 1: %%DEV1_IP%%
-echo     echo   Developer 2: %%DEV2_IP%%
-echo     echo   Developer 3: %%DEV3_IP%%
-echo     echo.
-echo     echo Current User:
-echo     echo   Name: %%YOUR_NAME%%
-echo     echo   IP: %%YOUR_IP%%
-echo     echo.
-echo     echo Server Paths:
-echo     echo   Vote Script: %%SERVER_VOTE_SCRIPT%%
-echo     echo.
-echo     echo Configuration Status:
-echo     if exist "%%KEY_FILE%%" ^(
-echo         echo   SSH Key: ✓ Found
-echo     ^) else ^(
-echo         echo   SSH Key: ✗ Not found - Update KEY_FILE path
-echo     ^)
-echo     echo.
-echo     echo Last Updated: %%date%% %%time%%
-echo     echo ============================================
-echo ^)
-) > "%SCRIPT_DIR%config_temp.bat"
-
-REM Replace original config file
-move /y "%SCRIPT_DIR%config_temp.bat" "%SCRIPT_DIR%config.bat" >nul
-goto :eof

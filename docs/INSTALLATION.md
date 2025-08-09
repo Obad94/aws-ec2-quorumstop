@@ -12,6 +12,46 @@ Before starting, ensure you have:
 - [ ] Basic familiarity with command prompt
 - [ ] Team members' public IP addresses
 
+## 🧲 (Optional) Elastic IP for Stable Address
+
+If you do NOT want the public IP to change every start/stop cycle, allocate and associate an Elastic IP. This avoids frequent config rewrites and DNS / allow‑list churn.
+
+### Why Use an Elastic IP?
+- Stable SSH endpoint (no need to distribute new IP daily)
+- Firewall / corporate allow-lists stay valid
+- Easier automation (scripts less often need to update SERVER_IP)
+- Recommended if the instance is started/stopped multiple times per day
+
+### Allocate an Elastic IP
+```powershell
+aws ec2 allocate-address --domain vpc
+```
+Output includes "AllocationId" (e.g. eipalloc-0123456789abcdef0) and "PublicIp".
+
+### Associate Elastic IP with Your Instance
+```powershell
+aws ec2 associate-address ^
+  --instance-id i-YOURINSTANCE ^
+  --allocation-id eipalloc-0123456789abcdef0
+```
+
+### Verify Association
+```powershell
+aws ec2 describe-addresses --allocation-ids eipalloc-0123456789abcdef0 --query "Addresses[0].[PublicIp,InstanceId]" --output table
+```
+
+### Update Security Groups (if needed)
+No change usually required—rules reference 0.0.0.0/0 or your client IPs, not the instance IP. But update any external tooling referencing the old ephemeral IP.
+
+### Costs / Considerations
+- Elastic IPs are free while associated with a running or stopped instance (one per instance) but AWS charges for unused (unassociated) Elastic IPs.
+- Release it if you no longer need it:
+```powershell
+aws ec2 release-address --allocation-id eipalloc-0123456789abcdef0
+```
+
+---
+
 ## 🛠️ Step 1: Install AWS CLI
 
 ### Download and Install
@@ -134,28 +174,15 @@ cd aws-ec2-quorumstop
 
 ### Configure Your Environment
 
-1. **Edit `scripts/config.bat`**:
+1. **Run setup wizard (new)**:
+   ```batch
+   tools\setup-wizard.bat
+   ```
+   or manually edit below.
+
+2. **Manual edit (legacy)** `scripts/config.bat`:
    ```batch
    notepad scripts\config.bat
-   ```
-
-2. **Update these settings**:
-   ```batch
-   REM AWS Configuration
-   set INSTANCE_ID=i-1234567890abcdef0    # Your EC2 instance ID
-   set AWS_REGION=us-west-2               # Your EC2 region
-
-   REM SSH Configuration  
-   set KEY_FILE=C:\Users\YourName\Downloads\your-key.pem
-
-   REM Developer IP Mappings (get from whatismyipaddress.com)
-   set DEV1_IP=203.0.113.1
-   set DEV2_IP=203.0.113.2
-   set DEV3_IP=203.0.113.3
-
-   REM Current User Configuration (change per developer)
-   set YOUR_NAME=YourName
-   set YOUR_IP=203.0.113.1
    ```
 
 3. **Find Your Instance ID**:
@@ -174,20 +201,7 @@ scripts\test_aws.bat
 Expected output:
 ```
 === AWS Debug Test ===
-
-Testing AWS CLI...
-aws-cli/2.15.0 Python/3.11.6 Windows/10 exe/AMD64
-
-Testing AWS credentials...
-{
-    "UserId": "AIDA...",
-    "Account": "123456789012", 
-    "Arn": "arn:aws:iam::123456789012:user/your-username"
-}
-
-Testing EC2 access...
-# Table showing your instance details
-
+...
 SUCCESS: All AWS commands working!
 ```
 
@@ -197,18 +211,10 @@ SUCCESS: All AWS commands working!
 scripts\view_config.bat
 ```
 
-This should display your current configuration without errors.
-
 ### Test Server Start/Stop
 
 ```batch
-# Start server (if stopped)
 scripts\start_server.bat
-
-# View current status
-scripts\view_config.bat
-
-# Test shutdown process (will prompt for vote)
 scripts\shutdown_server.bat
 ```
 

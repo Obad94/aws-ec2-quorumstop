@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning (when formal releases begin).
 
 ## [Unreleased]
-- No unreleased changes.
+### Added
+- Shared `lib_update_config.bat` to eliminate duplicate UPDATE_CONFIG logic
+- Implemented `tools/setup-wizard.bat` interactive configuration generator
+- Implemented `tools/sync-ip.bat` lightweight IP refresh utility
+- Dynamic enumeration of DEVn_IP variables in config updates and display
+- Elastic IP guidance section added to `docs/INSTALLATION.md`
+- Example multi-user configs: `examples/team-5-developers/`
+### Changed
+- `start_server.bat` and `shutdown_server.bat` now call shared library for config updates
+- Updated examples README with roadmap and usage notes
+### Planned
+- PowerShell module variants & Pester tests (next)
+- CI workflow with ShellCheck + Pester + batch lint
 
 ## [0.1.2] - 2025-08-09
 ### Added
