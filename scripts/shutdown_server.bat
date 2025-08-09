@@ -179,6 +179,15 @@ if "%SERVER_IP%"=="0.0.0.0" (
     exit /b 1
 )
 
+REM Sync dynamic team map so vote script shows current developer names
+echo Syncing team map to server...
+call "%SCRIPT_DIR%sync_team.bat"
+if errorlevel 1 (
+  echo WARNING: Team map sync failed (names may show as fallback values)
+) else (
+  echo Team map sync complete.
+)
+
 REM Check remote vote script existence before initiating
 if exist "%KEY_FILE%" (
   echo Checking remote vote script path: %SERVER_VOTE_SCRIPT%

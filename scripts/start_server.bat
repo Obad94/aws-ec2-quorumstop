@@ -222,7 +222,7 @@ if /i "%SERVER_STATUS%"=="stopped" (
             )
         ) else (
             echo New server IP: %NEW_IP%
-            echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER@%NEW_IP%
+            echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@%NEW_IP%
             echo.
             echo Updating configuration with new IP...
             call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "%NEW_IP%"

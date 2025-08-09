@@ -12,6 +12,7 @@ VOTE_DIR="/tmp/shutdown_vote"
 VOTE_TIMEOUT=300  # 5 minutes voting window
 LOG_FILE="/var/log/quorumstop-votes.log"
 PLAIN_MODE=0
+TEAM_MAP_FILE="$HOME/.quorumstop/team.map"
 
 # Parse optional flag first
 if [[ "$1" == "--plain" || "$1" == "-p" ]]; then
@@ -20,16 +21,39 @@ if [[ "$1" == "--plain" || "$1" == "-p" ]]; then
 fi
 
 # ============================================
-# Team IP to Name Mappings (CONFIGURE THIS)
+# Team IP to Name Mappings (CONFIGURE THIS / FALLBACK ONLY)
 # ============================================
-# Add your team members' public IP addresses and names
-# Get IPs from: https://whatismyipaddress.com
-# NOTE: Keep this list in sync with Windows config.bat for consistent naming.
+# These are fallback defaults. They will be overridden if a dynamic team.map file is present.
 # shellcheck disable=SC2034
 declare -A DEV_NAMES
-DEV_NAMES["203.0.113.10"]="Alice"     # Developer 1
-DEV_NAMES["203.0.113.20"]="Bob"       # Developer 2  
-DEV_NAMES["203.0.113.30"]="Carol"     # Developer 3
+DEV_NAMES["203.0.113.10"]="Alice"     # Fallback Developer 1
+DEV_NAMES["203.0.113.20"]="Bob"       # Fallback Developer 2  
+DEV_NAMES["203.0.113.30"]="Carol"     # Fallback Developer 3
+
+load_team_map() {
+  # Load dynamic mappings from $TEAM_MAP_FILE if it exists.
+  # File format (whitespace separated, optional comments):
+  #   <ip> <Name>
+  #   # comment lines ignored
+  if [[ -f $TEAM_MAP_FILE ]]; then
+    local loaded=0
+    # Clear existing (fallback) entries
+    DEV_NAMES=()
+    while IFS=$' \t' read -r ip name _rest; do
+      [[ -z $ip || ${ip:0:1} == '#' ]] && continue
+      [[ -z $name ]] && continue
+      DEV_NAMES["$ip"]="$name"
+      ((loaded++))
+    done < "$TEAM_MAP_FILE"
+    if (( loaded > 0 )); then
+      echo "[info] Loaded $loaded team entries from $TEAM_MAP_FILE" >&2
+    else
+      echo "[warn] team.map present but no valid entries parsed; using fallback defaults" >&2
+    fi
+  fi
+}
+
+load_team_map
 
 # ============================================
 # Helper Functions

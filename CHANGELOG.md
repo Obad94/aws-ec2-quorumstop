@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.6] - 2025-08-09
+### Added
+- `scripts/sync_team.bat` to dynamically generate and upload team.map to server.
+- Dynamic team map loading in `server/vote_shutdown.sh` to show updated developer names during voting.
+### Changed
+- `shutdown_server.bat` now calls `sync_team.bat` before initiating vote to ensure names are current.
+- Improved automation for syncing developer mappings between Windows and server scripts.
+### Fixed
+- Prevented manual edits to team names in `server/vote_shutdown.sh` by introducing dynamic syncing.
+
 ## [0.1.5] - 2025-08-09
 ### Added
 - Shared `scripts/lib_ec2.bat` for reusable EC2 instance state and public IP retrieval.
