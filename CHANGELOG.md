@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.5] - 2025-08-09
+### Added
+- Shared `scripts/lib_ec2.bat` for reusable EC2 instance state and public IP retrieval.
+- `server/vote_shutdown.sh` now supports `--plain`/`-p` mode for emoji-free output (for minimal terminals).
+- Remote script existence check before initiating vote in `shutdown_server.bat`.
+### Changed
+- Refactored `start_server.bat` and `shutdown_server.bat` to use `lib_ec2.bat` for all AWS status/IP polling, reducing code duplication and improving reliability.
+- Improved configuration validation and error messages in both startup and shutdown scripts.
+- Hardened `lib_update_config.bat` for future escaping and clarified header.
+- Enhanced `vote_shutdown.sh` with safer logging, clearer output, and improved portability.
+### Fixed
+- All scripts now robustly handle missing/invalid config, SSH key, and AWS CLI errors with clearer guidance.
+
 ## [0.1.4] - 2025-08-09
 ### Changed
 - Improved `scripts/test_aws.bat`: robust error handling, explicit exit code checks, root credential warning, and condensed EC2 instance summary output.

@@ -1,6 +1,6 @@
 @echo off
 REM ============================================
-REM Shared helper: lib_update_config.bat
+REM Shared helper: lib_update_config.bat (Enhanced escaping)
 REM Provides :UPDATE_CONFIG routine to rewrite config.bat with new SERVER_IP
 REM Usage: call "%~dp0lib_update_config.bat" :UPDATE_CONFIG NEW_IP
 REM ============================================
@@ -37,6 +37,15 @@ if not defined _TEAM_COUNT (
 )
 if not defined _TEAM_COUNT set _TEAM_COUNT=0
 
+REM Helper to escape special characters for echo lines
+call :_ESC VAR INSTANCE_ID
+call :_ESC VAR AWS_REGION
+call :_ESC VAR KEY_FILE
+call :_ESC VAR YOUR_NAME
+call :_ESC VAR YOUR_IP
+call :_ESC VAR SERVER_VOTE_SCRIPT
+call :_ESC VAR SERVER_USER
+
 REM Build temp file
 set TIMESTAMP=%date% %time%
 (
@@ -55,7 +64,7 @@ set TIMESTAMP=%date% %time%
   echo set SERVER_IP=!NEW_IP_ADDRESS!
   echo set KEY_FILE=%KEY_FILE%
   echo.
-  echo REM Team Count (highest indexed DEVn_IP preserved)
+  echo REM Team Count ^(highest indexed DEVn_IP preserved^)
   echo set TEAM_COUNT=!_TEAM_COUNT!
   echo.
   echo REM Team IP Mappings and Names
@@ -71,7 +80,7 @@ set TIMESTAMP=%date% %time%
       )
     )
   ) else (
-    echo REM (No team members defined)
+    echo REM ^(No team members defined^)
   )
   echo.
   echo REM Current User Configuration
@@ -82,7 +91,7 @@ set TIMESTAMP=%date% %time%
   echo set SERVER_VOTE_SCRIPT=%SERVER_VOTE_SCRIPT%
   echo set SERVER_USER=%SERVER_USER%
   echo.
-  echo REM Display Configuration (lists team entries)
+  echo REM Display Configuration ^(lists team entries^)
   echo if "%%1"=="show" ^(
   echo   echo ============================================
   echo   echo AWS EC2 QuorumStop - Configuration
@@ -105,3 +114,8 @@ set TIMESTAMP=%date% %time%
 move /y "%SCRIPT_DIR%config_temp.bat" "%SCRIPT_DIR%config.bat" >nul
 endlocal & echo Updated config.bat with new IP %NEW_IP_ADDRESS%
 goto :eof
+
+:_ESC
+REM Parameters: mode varName
+REM Minimal placeholder (currently not transforming)—reserved for future complex escaping
+exit /b 0

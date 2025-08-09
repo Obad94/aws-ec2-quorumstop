@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 REM ============================================
-REM AWS EC2 QuorumStop - Main Script
-REM Implements team voting for server shutdown
+REM AWS EC2 QuorumStop - Main Script (Enhanced)
+REM Adds shared helpers, validation, remote script check
 REM ============================================
 
 REM Disable AWS CLI pager and verify CLI is available
@@ -36,35 +36,48 @@ echo === AWS EC2 QuorumStop ===
 
 echo.
 
+REM Quick validation of required vars
+for %%V in (INSTANCE_ID AWS_REGION KEY_FILE SERVER_USER SERVER_VOTE_SCRIPT YOUR_IP) do (
+  call if "%%%V%%"=="" echo ERROR: %%V is not set in config.bat & set _CFG_ERR=1
+)
+if defined _CFG_ERR (
+  echo Fix the above configuration issues and re-run.
+  pause
+  exit /b 1
+)
+if not exist "%KEY_FILE%" (
+  echo WARNING: SSH key not found: %KEY_FILE%
+  echo Update KEY_FILE in scripts\config.bat or place the key at this path.
+)
+
 REM If placeholder IP still present, warn early (will be re-fetched later if running)
 if "%SERVER_IP%"=="0.0.0.0" echo (Note: Placeholder SERVER_IP=0.0.0.0 - will refresh from AWS if instance is running)
 
-REM Check current server status
-echo Checking current server status...
-aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_server_status.tmp" 2>nul
-if errorlevel 1 (
-    echo ERROR: Cannot check server status via AWS
-    echo Please verify your AWS credentials and instance ID
-    del "%TEMP%\qs_server_status.tmp" 2>nul
-    pause
-    exit /b 1
+REM Use helper library for status
+if not exist "%SCRIPT_DIR%lib_ec2.bat" (
+  echo ERROR: Missing helper library lib_ec2.bat (should be in scripts folder)
+  pause
+  exit /b 1
 )
 
-set /p CURRENT_STATUS=<"%TEMP%\qs_server_status.tmp"
-del "%TEMP%\qs_server_status.tmp"
-
-REM Trim spaces from status
-for /f "tokens=* delims= " %%a in ("%CURRENT_STATUS%") do set CURRENT_STATUS=%%a
-for /l %%a in (1,1,100) do if "%CURRENT_STATUS:~-1%"==" " set CURRENT_STATUS=%CURRENT_STATUS:~0,-1%
+echo Checking current server status...
+call "%SCRIPT_DIR%lib_ec2.bat" :GET_STATE >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Cannot retrieve server status via AWS CLI.
+  pause
+  exit /b 1
+)
+set CURRENT_STATUS=%STATE%
 
 echo Current server status: [%CURRENT_STATUS%]
+
 echo.
 
 REM Handle server states
-if "%CURRENT_STATUS%"=="stopped" goto :SERVER_STOPPED
-if "%CURRENT_STATUS%"=="stopping" goto :SERVER_STOPPING
-if "%CURRENT_STATUS%"=="pending" goto :SERVER_PENDING
-if "%CURRENT_STATUS%"=="running" goto :SERVER_RUNNING
+if /i "%CURRENT_STATUS%"=="stopped" goto :SERVER_STOPPED
+if /i "%CURRENT_STATUS%"=="stopping" goto :SERVER_STOPPING
+if /i "%CURRENT_STATUS%"=="pending" goto :SERVER_PENDING
+if /i "%CURRENT_STATUS%"=="running" goto :SERVER_RUNNING
 
 REM Handle unexpected status
 echo WARNING: Server is in unexpected state: [%CURRENT_STATUS%]
@@ -86,38 +99,21 @@ exit /b 0
 echo INFO: Server is already stopping!
 echo Waiting for shutdown to complete...
 echo.
-
 set WAIT_COUNT=0
 :WAIT_LOOP
-echo Checking shutdown progress... (attempt %WAIT_COUNT%)
-timeout /t 10 /nobreak >nul
-set /a WAIT_COUNT+=1
-
-aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].State.Name" --output text > "%TEMP%\qs_wait_status.tmp" 2>nul
-if errorlevel 1 (
-    echo ERROR: Cannot check status during wait
-    del "%TEMP%\qs_wait_status.tmp" 2>nul
-    pause
-    exit /b 1
-)
-
-set /p WAIT_STATUS=<"%TEMP%\qs_wait_status.tmp"
-del "%TEMP%\qs_wait_status.tmp"
-
-for /f "tokens=* delims= " %%a in ("%WAIT_STATUS%") do set WAIT_STATUS=%%a
-for /l %%a in (1,1,100) do if "%WAIT_STATUS:~-1%"==" " set WAIT_STATUS=%WAIT_STATUS:~0,-1%
-
-echo Status: [%WAIT_STATUS%]
-
-if "%WAIT_STATUS%"=="stopped" (
+call "%SCRIPT_DIR%lib_ec2.bat" :GET_STATE >nul 2>&1
+set WAIT_STATUS=%STATE%
+echo Checking shutdown progress... (attempt %WAIT_COUNT%)  Status: [%WAIT_STATUS%]
+if /i "%WAIT_STATUS%"=="stopped" (
     echo.
     echo SUCCESS: Server shutdown completed!
     echo Server is now stopped and not charging.
     pause
     exit /b 0
 )
-
-if "%WAIT_STATUS%"=="stopping" (
+if /i "%WAIT_STATUS%"=="stopping" (
+    timeout /t 10 /nobreak >nul
+    set /a WAIT_COUNT+=1
     if %WAIT_COUNT% lss 12 goto :WAIT_LOOP
     echo.
     echo Server is taking longer than expected to stop
@@ -125,7 +121,6 @@ if "%WAIT_STATUS%"=="stopping" (
     pause
     exit /b 0
 )
-
 echo.
 echo WARNING: Unexpected status change to [%WAIT_STATUS%]
 echo Please check AWS Console
@@ -151,22 +146,18 @@ echo.
 
 REM Update IP if needed
 echo Verifying server IP...
-aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_current_ip.tmp" 2>nul
+call "%SCRIPT_DIR%lib_ec2.bat" :GET_PUBLIC_IP >nul 2>&1
 if not errorlevel 1 (
-    set /p ACTUAL_IP=<"%TEMP%\qs_current_ip.tmp"
-    for /f "tokens=* delims= " %%a in ("!ACTUAL_IP!") do set ACTUAL_IP=%%a
-    for /l %%a in (1,1,100) do if "!ACTUAL_IP:~-1!"==" " set ACTUAL_IP=!ACTUAL_IP:~0,-1!
-    
-    if not "!ACTUAL_IP!"=="%SERVER_IP%" (
-        echo Updating IP from %SERVER_IP% to !ACTUAL_IP!
-        call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "!ACTUAL_IP!"
+    set ACTUAL_IP=%PUBLIC_IP%
+    if not "%ACTUAL_IP%"=="%SERVER_IP%" (
+        echo Updating IP from %SERVER_IP% to %ACTUAL_IP%
+        call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "%ACTUAL_IP%"
         call "%SCRIPT_DIR%config.bat" >nul 2>&1
         echo Configuration updated
     ) else (
         echo IP unchanged - not rewriting config
     )
 )
-del "%TEMP%\qs_current_ip.tmp" 2>nul
 
 REM Guard: ensure we have a usable server IP before SSH
 if "%SERVER_IP%"=="" (
@@ -188,17 +179,26 @@ if "%SERVER_IP%"=="0.0.0.0" (
     exit /b 1
 )
 
+REM Check remote vote script existence before initiating
+if exist "%KEY_FILE%" (
+  echo Checking remote vote script path: %SERVER_VOTE_SCRIPT%
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=no -i "%KEY_FILE%" %SERVER_USER%@%SERVER_IP% "test -x '%SERVER_VOTE_SCRIPT%'" >nul 2>&1
+  if errorlevel 1 (
+     echo ERROR: Remote vote script not found or not executable: %SERVER_VOTE_SCRIPT%
+     echo Ensure it is deployed and chmod +x applied.
+     echo Path can be changed via SERVER_VOTE_SCRIPT in config.bat
+     pause
+     exit /b 1
+  )
+) else (
+  echo WARNING: Skipping remote script pre-check (SSH key missing locally).
+)
+
 REM Conduct democratic vote
 
 echo Starting democratic vote process...
 
-REM Ensure SSH key exists before connecting
-if not exist "%KEY_FILE%" (
-    echo ERROR: SSH key not found: %KEY_FILE%
-    echo Update KEY_FILE in scripts\config.bat or place the key at this path.
-    pause
-    exit /b 1
-)
+echo Using SSH key: %KEY_FILE%
 
 echo Connecting to server: %SERVER_IP%
 
@@ -232,7 +232,6 @@ if %VOTE_RESULT%==0 (
     echo.
     echo The team has approved the shutdown request.
     echo Sending shutdown command to AWS...
-    
     aws ec2 stop-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID%
     if %errorlevel%==0 (
         echo SUCCESS: Server stop command sent!
@@ -247,7 +246,6 @@ if %VOTE_RESULT%==0 (
         pause
         exit /b 1
     )
-
     echo.
     echo You can monitor server status in AWS Console:
     echo https://%AWS_REGION%.console.aws.amazon.com/ec2/v2/home?region=%AWS_REGION#Instances:instanceId=%INSTANCE_ID%
