@@ -15,6 +15,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ### Changed
 - `start_server.bat` and `shutdown_server.bat` now call shared library for config updates
 - Updated examples README with roadmap and usage notes
+### Fixed
+- `tools/setup-wizard.bat`: Correct YOUR_NAME / YOUR_IP mapping (previously could write literal CHOICE); unified selection (index, DEVn, DEVn_IP, or full IP) and shows chosen mapping before write
+- `scripts/view_config.bat`: Renders configuration directly instead of relying on inline display block inside `config.bat`, fixing blank DEVn_IP entries
+- Prevents accidental literal placeholder values being persisted in `config.bat`
 ### Planned
 - PowerShell module variants & Pester tests (next)
 - CI workflow with ShellCheck + Pester + batch lint

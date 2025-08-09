@@ -2,14 +2,12 @@
 
 REM ============================================
 REM AWS EC2 QuorumStop - Configuration Viewer
-REM Displays current configuration and system status
+REM Displays current configuration and system status (enhanced team listing)
 REM ============================================
 
-REM Resolve script directory so paths work from anywhere
 set "SCRIPT_DIR=%~dp0"
 
 echo === AWS EC2 QuorumStop - Configuration Viewer ===
-echo.
 
 if not exist "%SCRIPT_DIR%config.bat" (
     echo ERROR: scripts\config.bat not found!
@@ -18,7 +16,54 @@ if not exist "%SCRIPT_DIR%config.bat" (
     exit /b 1
 )
 
-call "%SCRIPT_DIR%config.bat" show
+REM Load variables only (suppress embedded display block)
+call "%SCRIPT_DIR%config.bat" >nul 2>&1
+
+REM Now render a clean report (avoids broken dynamic expansion inside config.bat)
+echo ============================================
+echo AWS EC2 QuorumStop - Configuration
+echo ============================================
+echo Instance ID: %INSTANCE_ID%
+echo Region: %AWS_REGION%
+echo Server IP: %SERVER_IP%
+echo SSH Key: %KEY_FILE%
+echo User: %SERVER_USER%
+echo.
+echo Team Entries:
+if not defined TEAM_COUNT (
+  echo   (No teams defined)
+) else (
+  for /L %%n in (1,1,%TEAM_COUNT%) do (
+    call set "_IP=%%DEV%%n_IP%%"
+    call set "_NM=%%DEV%%n_NAME%%"
+    if defined _IP (
+      if not defined _NM set "_NM=Dev%%n"
+      call echo     DEV%%n_IP=%%_IP%% (%%_NM%%)
+    )
+    set "_IP=" & set "_NM="
+  )
+)
+
+echo.
+echo Current User: %YOUR_NAME% (%YOUR_IP%)
+
+echo.
+echo Team Detail Table:
+if not defined TEAM_COUNT (
+  echo   (No TEAM_COUNT set)
+) else (
+  echo   Index  IP                  Name
+  echo   -----  ------------------  -----------------
+  for /L %%n in (1,1,%TEAM_COUNT%) do (
+    call set "_IP=%%DEV%%n_IP%%"
+    call set "_NM=%%DEV%%n_NAME%%"
+    if defined _IP (
+      if not defined _NM set "_NM=Dev%%n"
+      call echo   %%n      %%_IP%%    %%_NM%%
+    )
+    set "_IP=" & set "_NM="
+  )
+)
 
 echo.
 echo Additional Information:
