@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.4] - 2025-08-09
+### Changed
+- Improved `scripts/test_aws.bat`: robust error handling, explicit exit code checks, root credential warning, and condensed EC2 instance summary output.
+
 ## [0.1.3] - 2025-08-09
 ### Changed
 - Enhanced config compatibility: added TEAM_COUNT, DEVn_NAME, and show block to all example configs.
