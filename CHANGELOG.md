@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3] - 2025-08-09
+### Changed
+- Enhanced config compatibility: added TEAM_COUNT, DEVn_NAME, and show block to all example configs.
+- Fixed display loop in scripts\config.bat for correct variable expansion.
+- Added placeholder IP (0.0.0.0) guards to start_server.bat and shutdown_server.bat for safer operation.
+- Harmonized setup-wizard.bat output header to clarify auto-update behavior.
+
+# Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning (when formal releases begin).
