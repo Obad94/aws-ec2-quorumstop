@@ -123,7 +123,6 @@ if "%SERVER_STATUS%"=="running" (
     echo.
     echo SUCCESS: Server is already running!
     echo Getting current IP address...
-    
     set IP_TRIES=0
     :GET_RUNNING_IP
     aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID% --query "Reservations[0].Instances[0].PublicIpAddress" --output text > "%TEMP%\qs_ip.tmp"
@@ -145,14 +144,14 @@ if "%SERVER_STATUS%"=="running" (
         ) else (
             echo Server IP: !CURRENT_IP!
             echo SSH command: ssh -i "%KEY_FILE%" %SERVER_USER%@!CURRENT_IP!
-            if not "!CURRENT_IP!"=="%SERVER_IP%" (
+            if /i "!CURRENT_IP!"=="%SERVER_IP%" (
+                echo IP unchanged - skipping config rewrite
+            ) else (
                 echo.
                 echo IP has changed from %SERVER_IP% to !CURRENT_IP!
                 echo Updating configuration...
                 call :UPDATE_CONFIG "!CURRENT_IP!"
                 echo Configuration updated successfully
-            ) else (
-                echo IP unchanged - configuration is current
             )
         )
     )
@@ -284,6 +283,12 @@ REM ============================================
 REM Function to update configuration file
 REM ============================================
 :UPDATE_CONFIG
+REM Skip rewrite if new IP equals existing
+if /i "%~1"=="%SERVER_IP%" (
+  echo (No change in IP; config not rewritten)
+  goto :eof
+)
+
 set NEW_IP_ADDRESS=%~1
 REM Trim any spaces from the IP address
 for /f "tokens=* delims= " %%a in ("%NEW_IP_ADDRESS%") do set NEW_IP_ADDRESS=%%a

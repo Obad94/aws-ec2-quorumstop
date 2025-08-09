@@ -10,6 +10,7 @@
 
 VOTE_DIR="/tmp/shutdown_vote"
 VOTE_TIMEOUT=300  # 5 minutes voting window
+LOG_FILE="/var/log/quorumstop-votes.log"
 
 # ============================================
 # Team IP to Name Mappings (CONFIGURE THIS)
@@ -116,6 +117,16 @@ send_final_results() {
     wall "============================================"
 }
 
+log_vote() {
+  local action="$1" user="$2" ip="$3" detail="$4"
+  # Ensure log file directory exists and has safe perms
+  if [ ! -f "$LOG_FILE" ]; then
+    sudo touch "$LOG_FILE" 2>/dev/null || touch "$LOG_FILE" 2>/dev/null
+    sudo chmod 640 "$LOG_FILE" 2>/dev/null || chmod 640 "$LOG_FILE" 2>/dev/null
+  fi
+  printf '%s | %s | %s | %s | %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$action" "$user" "$ip" "$detail" >> "$LOG_FILE" 2>/dev/null || true
+}
+
 # ============================================
 # Main Functions
 # ============================================
@@ -138,16 +149,19 @@ handle_vote() {
             echo "yes" > "$vote_file"
             echo "✅ Vote recorded: YES (agree to shutdown)"
             send_vote_update "$user_name" "$user_ip" "yes"
+            log_vote "VOTE_CAST" "$user_name" "$user_ip" "yes"
             ;;
         no|n|NO|N)
             echo "no" > "$vote_file"
             echo "❌ Vote recorded: NO (reject shutdown)"
             send_vote_update "$user_name" "$user_ip" "no"
+            log_vote "VOTE_CAST" "$user_name" "$user_ip" "no"
             ;;
         *)
             echo "❌ Invalid vote. Usage:"
             echo "   vote_shutdown yes  (agree to shutdown)"
             echo "   vote_shutdown no   (reject shutdown)"
+            log_vote "VOTE_INVALID" "$user_name" "$user_ip" "$vote"
             exit 1
             ;;
     esac
@@ -156,6 +170,7 @@ handle_vote() {
 initiate_vote() {
     local initiator_ip=$1
     local initiator_name=$(get_dev_name "$initiator_ip")
+    log_vote "VOTE_INITIATED" "$initiator_name" "$initiator_ip" "timeout=$VOTE_TIMEOUT"
     
     echo "🗳️  Starting vote initiated by $initiator_name ($initiator_ip)"
     
@@ -184,6 +199,7 @@ initiate_vote() {
     if [ $other_users -eq 0 ]; then
         echo ""
         echo "✅ Only initiator connected. Safe to shutdown."
+        log_vote "VOTE_AUTOPASS" "$initiator_name" "$initiator_ip" "solo"
         return 0
     fi
     
@@ -248,6 +264,7 @@ initiate_vote() {
         echo ""
         echo "🏁 RESULT: VOTE PASSED - Shutdown approved!"
         send_final_results "$yes_votes" "$total_no" "$non_voters" "PASS"
+        log_vote "VOTE_RESULT" "$initiator_name" "$initiator_ip" "PASS yes=$yes_votes no=$total_no"
         sleep 30  # Grace period for users to save work
         rm -rf "$VOTE_DIR"
         return 0  # Success - proceed with shutdown
@@ -255,6 +272,7 @@ initiate_vote() {
         echo ""
         echo "🛡️  RESULT: VOTE FAILED - Shutdown rejected!"
         send_final_results "$yes_votes" "$total_no" "$non_voters" "FAIL"
+        log_vote "VOTE_RESULT" "$initiator_name" "$initiator_ip" "FAIL yes=$yes_votes no=$total_no"
         rm -rf "$VOTE_DIR"
         return 1  # Failure - do not shutdown
     fi

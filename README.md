@@ -1,5 +1,10 @@
 # AWS EC2 QuorumStop
 
+[//]: # (Status badges placeholder)
+[![CI Status](https://img.shields.io/badge/CI-pending-lightgrey.svg)](../../actions)
+[![Security Scan](https://img.shields.io/badge/Security-TBD-lightgrey.svg)](../../security)
+[![Docs](https://img.shields.io/badge/Docs-Complete-brightgreen.svg)](docs/)
+
 > A collaborative AWS EC2 management system that prevents accidental shutdowns through team voting and automated safety checks.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

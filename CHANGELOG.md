@@ -7,6 +7,21 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [Unreleased]
 - No unreleased changes.
 
+## [0.1.2] - 2025-08-09
+### Added
+- .editorconfig and .gitattributes for consistent line endings & style
+- GitHub issue templates (bug_report, feature_request)
+- CI workflow scaffold (bash ShellCheck, placeholder batch check)
+- Audit logging to /var/log/quorumstop-votes.log in server vote script
+- Status badge placeholders in README
+
+### Changed
+- start_server.bat and shutdown_server.bat: skip config rewrite when IP unchanged
+- Consistent quoting of KEY_FILE and minor echo clarifications
+
+### Planned
+- Refactor shared UPDATE_CONFIG into a dedicated helper script (next step)
+
 ## [0.1.1] - 2025-08-08
 - Docs: Align PROJECT_STRUCTURE to reflect current files; standardize SSH user (ubuntu)
 - Docs: Clarify initiator voting behavior in USAGE; add PowerShell Test-NetConnection tip

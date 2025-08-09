@@ -157,6 +157,8 @@ if not errorlevel 1 (
         call :UPDATE_CONFIG "!ACTUAL_IP!"
         call "%SCRIPT_DIR%config.bat"
         echo Configuration updated
+    ) else (
+        echo IP unchanged - not rewriting config
     )
 )
 del "%TEMP%\qs_current_ip.tmp" 2>nul
@@ -274,6 +276,7 @@ REM ============================================
 REM Function to update configuration file
 REM ============================================
 :UPDATE_CONFIG
+if /i "%~1"=="%SERVER_IP%" goto :eof
 set NEW_IP_ADDRESS=%~1
 for /f "tokens=* delims= " %%a in ("%NEW_IP_ADDRESS%") do set NEW_IP_ADDRESS=%%a
 for /l %%a in (1,1,100) do if "%NEW_IP_ADDRESS:~-1%"==" " set NEW_IP_ADDRESS=%NEW_IP_ADDRESS:~0,-1%

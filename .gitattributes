@@ -1,0 +1,14 @@
+# Normalize line endings
+* text=auto
+
+# Force shell scripts LF
+yarn.lock -text
+*.sh text eol=lf
+
+# Force batch scripts CRLF
+*.bat text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
