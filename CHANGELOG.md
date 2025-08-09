@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.8] - 2025-08-09
+### Fixed
+- **Critical Fix**: Resolved encoding issues in `scripts/lib_ec2.bat` that caused execution failures
+- **Critical Fix**: Fixed hash computation in `scripts/deploy_vote_script.bat` by replacing unreliable certutil with PowerShell Get-FileHash
+- **Critical Fix**: Corrected SSH command syntax in deployment script (removed problematic `\$1` escaping that caused "unexpected . at this time" errors)
+- **Critical Fix**: Fixed delayed expansion issues in batch files causing variable assignment failures
+- **Critical Fix**: Resolved config.bat variable scoping issues that prevented environment variables from being properly exported
+- Improved error handling and debugging output in both lib_ec2.bat and deploy_vote_script.bat
+- Enhanced hash comparison logic with proper delayed expansion syntax
+- Fixed AWS CLI command execution with proper variable substitution
+
 ## [0.1.7] - 2025-08-09
 ### Changed
 - Enhanced `scripts/config.bat` for simplified variable declarations and removed inline display logic.
