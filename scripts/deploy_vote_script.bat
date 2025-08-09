@@ -142,7 +142,8 @@ ssh -o StrictHostKeyChecking=no -i "%KEY_FILE%" %SERVER_USER%@%SERVER_IP% "chmod
   echo [deploy] ERROR: Post-upload setup failed.
   exit /b 2
 )
-echo [deploy] Upload & setup complete.
+REM Escaped & so it is not treated as a command separator
+echo [deploy] Upload ^& setup complete.
 
 :postSetup
 if defined LOCAL_HASH (
