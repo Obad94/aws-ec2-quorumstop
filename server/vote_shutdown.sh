@@ -31,20 +31,18 @@ DEV_NAMES["203.0.113.20"]="Bob"       # Fallback Developer 2
 DEV_NAMES["203.0.113.30"]="Carol"     # Fallback Developer 3
 
 load_team_map() {
-  # Load dynamic mappings from $TEAM_MAP_FILE if it exists.
-  # File format (whitespace separated, optional comments):
-  #   <ip> <Name>
-  #   # comment lines ignored
+  # Load dynamic mappings from $TEAM_MAP_FILE if it exists, stripping CR to avoid display glitches.
   if [[ -f $TEAM_MAP_FILE ]]; then
     local loaded=0
-    # Clear existing (fallback) entries
     DEV_NAMES=()
     while IFS=$' \t' read -r ip name _rest; do
       [[ -z $ip || ${ip:0:1} == '#' ]] && continue
+      ip=${ip%$'\r'}
+      name=${name%$'\r'}
       [[ -z $name ]] && continue
       DEV_NAMES["$ip"]="$name"
       ((loaded++))
-    done < "$TEAM_MAP_FILE"
+    done < <(tr -d '\r' < "$TEAM_MAP_FILE")
     if (( loaded > 0 )); then
       echo "[info] Loaded $loaded team entries from $TEAM_MAP_FILE" >&2
     else
@@ -103,7 +101,15 @@ get_connected_users() {
 
 get_dev_name() {
     local ip=$1
-    echo "${DEV_NAMES[$ip]:-Unknown($ip)}"
+    local name="${DEV_NAMES[$ip]}"
+    # Strip any stray CR / LF characters just in case (Windows CRLF uploads)
+    name="${name//$'\r'/}"
+    name="${name//$'\n'/}"
+    if [[ -z $name ]]; then
+      echo "Unknown($ip)"
+    else
+      echo "$name"
+    fi
 }
 
 get_user_ip() {

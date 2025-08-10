@@ -106,7 +106,6 @@ if not "%ACTUAL_IP%"=="" if not "%ACTUAL_IP%"=="%SERVER_IP%" (
   echo Updating IP from %SERVER_IP% to %ACTUAL_IP%
   set "SERVER_IP=%ACTUAL_IP%"
   call "%SCRIPT_DIR%lib_update_config.bat" :UPDATE_CONFIG "%ACTUAL_IP%" >nul 2>&1
-  >"%SCRIPT_DIR%server_ip.txt" (echo %SERVER_IP%)
   echo Configuration updated (runtime SERVER_IP=%SERVER_IP%)
 ) else (
   echo IP unchanged - not rewriting config

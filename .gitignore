@@ -13,10 +13,9 @@ Desktop.ini
 shutdown_log.txt
 server_ip.txt
 
-# Ephemeral IP marker artifacts (accidental redirection)
-[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
-[0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
-[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
+# Ephemeral IP marker artifacts (accidental redirection from batch echo lines)
+# Ignore any plain IPv4-looking filename (e.g. 35.92.135.87)
+/[0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*
 
 # AWS CLI artifacts
 .aws/
