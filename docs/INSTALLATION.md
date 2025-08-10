@@ -1,371 +1,255 @@
 # Installation Guide
 
-This guide will walk you through setting up AWS EC2 QuorumStop from scratch.
+Updated for dynamic team map syncing, unanimous voting default, and helper script enhancements.
 
 ## 📋 Prerequisites Checklist
 
 Before starting, ensure you have:
 
-- [ ] Windows 10/11 machine
-- [ ] AWS account with EC2 access
-- [ ] EC2 instance running (any size)
-- [ ] Basic familiarity with command prompt
-- [ ] Team members' public IP addresses
+- [ ] Windows 10/11 workstation
+- [ ] AWS CLI v2 installed
+- [ ] IAM user/role with: ec2:DescribeInstances, ec2:StartInstances, ec2:StopInstances, sts:GetCallerIdentity
+- [ ] EC2 instance (Ubuntu recommended) reachable via SSH (port 22)
+- [ ] Teammates' public IP addresses (for security group + roster)
+- [ ] SSH private key (.pem) locally
 
-## 🧲 (Optional) Elastic IP for Stable Address
+(Recommended) Elastic IP if frequent restarts cause IP churn and firewall pain points.
 
-If you do NOT want the public IP to change every start/stop cycle, allocate and associate an Elastic IP. This avoids frequent config rewrites and DNS / allow‑list churn.
+## 🧲 Elastic IP (Optional but Helpful)
 
-### Why Use an Elastic IP?
-- Stable SSH endpoint (no need to distribute new IP daily)
-- Firewall / corporate allow-lists stay valid
-- Easier automation (scripts less often need to update SERVER_IP)
-- Recommended if the instance is started/stopped multiple times per day
-
-### Allocate an Elastic IP
+Stable IP avoids repeated `SERVER_IP` rewrites. Steps (PowerShell):
 ```powershell
 aws ec2 allocate-address --domain vpc
+aws ec2 associate-address --instance-id i-YOURINSTANCE --allocation-id eipalloc-XXXXXXXXXXXX
 ```
-Output includes "AllocationId" (e.g. eipalloc-0123456789abcdef0) and "PublicIp".
-
-### Associate Elastic IP with Your Instance
+Release later if unused:
 ```powershell
-aws ec2 associate-address ^
-  --instance-id i-YOURINSTANCE ^
-  --allocation-id eipalloc-0123456789abcdef0
+aws ec2 release-address --allocation-id eipalloc-XXXXXXXXXXXX
 ```
-
-### Verify Association
-```powershell
-aws ec2 describe-addresses --allocation-ids eipalloc-0123456789abcdef0 --query "Addresses[0].[PublicIp,InstanceId]" --output table
-```
-
-### Update Security Groups (if needed)
-No change usually required—rules reference 0.0.0.0/0 or your client IPs, not the instance IP. But update any external tooling referencing the old ephemeral IP.
-
-### Costs / Considerations
-- Elastic IPs are free while associated with a running or stopped instance (one per instance) but AWS charges for unused (unassociated) Elastic IPs.
-- Release it if you no longer need it:
-```powershell
-aws ec2 release-address --allocation-id eipalloc-0123456789abcdef0
-```
-
----
 
 ## 🛠️ Step 1: Install AWS CLI
 
-### Download and Install
-
-1. Go to [AWS CLI Installation Page](https://aws.amazon.com/cli/)
-2. Download "AWS CLI for Windows" (MSI installer)
-3. Run the installer as administrator
-4. Restart Command Prompt after installation
-
-### Verify Installation
-
-```batch
+Download MSI from https://aws.amazon.com/cli/ then verify:
+```powershell
 aws --version
 ```
-Expected output: `aws-cli/2.x.x Python/3.x.x Windows/10 exe/AMD64`
 
 ## 🔐 Step 2: Configure AWS Credentials
 
-### Get Your AWS Credentials
-
-1. Log into AWS Console
-2. Click your name (top right) → **Security Credentials**
-3. Scroll to **Access Keys** section
-4. Click **Create Access Key** → **Command Line Interface (CLI)**
-5. Download the CSV file with your credentials
-
-### Configure AWS CLI
-
-```batch
+```powershell
 aws configure
 ```
-
-Enter the following when prompted:
-```
-AWS Access Key ID: AKIA.................... (from your CSV)
-AWS Secret Access Key: ................................ (from your CSV)
-Default region name: us-west-2 (or your EC2 instance region)
-Default output format: json
-```
-
-### Test AWS Access
-
-```batch
+Test:
+```powershell
 aws sts get-caller-identity
 ```
 
-Expected output:
-```json
-{
-    "UserId": "AIDA...",
-    "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/your-username"
-}
+## 🌐 Step 3: Security Group Rules
+
+Add inbound rules for each teammate's *current* public IP (SSH / TCP / 22 / x.x.x.x/32). Add any required app ports separately.
+
+Find your IP: https://ifconfig.me (or similar site).
+
+## 🔑 Step 4: SSH Key Prep
+
+Ensure a non‑encrypted OpenSSH key (.pem). Test connectivity:
+```powershell
+ssh -i C:\path\to\key.pem ubuntu@EC2_PUBLIC_IP
+```
+If blocked:
+```powershell
+Test-NetConnection -ComputerName EC2_PUBLIC_IP -Port 22
 ```
 
-## 🌐 Step 3: Configure EC2 Security Groups
-
-### Required Inbound Rules
-
-Your EC2 security group needs these rules:
-
-| Type | Protocol | Port | Source | Description |
-|------|----------|------|--------|-------------|
-| SSH | TCP | 22 | YOUR_IP/32 | Your public IP |
-| SSH | TCP | 22 | TEAMMATE_IP_1/32 | Teammate 1's IP |
-| SSH | TCP | 22 | TEAMMATE_IP_2/32 | Teammate 2's IP |
-| HTTP | TCP | 80 | 0.0.0.0/0 | Web traffic (optional) |
-| HTTPS | TCP | 443 | 0.0.0.0/0 | Secure web (optional) |
-
-### How to Add Rules
-
-1. AWS Console → **EC2** → **Security Groups**
-2. Find your instance's security group
-3. Click **Edit inbound rules**
-4. **Add rule** for each team member's IP
-5. **Save rules**
-
-### Find Your Public IP
-
-Each team member should visit: [whatismyipaddress.com](https://whatismyipaddress.com)
-
-## 🔑 Step 4: Set Up SSH Access
-
-Default user in this project: `ubuntu` (Ubuntu AMIs). Some AMIs use `ec2-user` (Amazon Linux).
-
-### Option A: Generate New SSH Key Pair
-
-```batch
-# Generate new key pair in AWS Console
-# EC2 → Key Pairs → Create Key Pair
-# Download the .pem file to your Downloads folder
-```
-
-### Option B: Convert Existing PuTTY Key
-
-If you have a `.ppk` file:
-
-1. Open **PuTTYgen**
-2. Click **Load** → Select your `.ppk` file
-3. **Conversions** → **Export OpenSSH key**
-4. Save as `your-aws-key.pem` (no passphrase)
-
-### Test SSH Connection
+## 📁 Step 5: Clone Repository
 
 ```powershell
-ssh -i "C:\path\to\your-key.pem" ubuntu@YOUR-EC2-PUBLIC-IP
-# If it fails, check port reachability:
-Test-NetConnection -ComputerName YOUR-EC2-PUBLIC-IP -Port 22
-```
-
-## 📁 Step 5: Download and Configure Scripts
-
-### Clone Repository
-
-```batch
-# Option 1: Git clone (if you have git)
 git clone https://github.com/Obad94/aws-ec2-quorumstop.git
 cd aws-ec2-quorumstop
 ```
+(Or download ZIP & extract.)
 
-### Configure Your Environment
+## ⚙️ Step 6: Create Local Config
 
-1. **Run setup wizard (new)**:
-   ```batch
-   tools\setup-wizard.bat
-   ```
-   or manually edit below.
+Copy sample then edit (never commit real one):
+```powershell
+copy scripts\config.sample.bat scripts\config.bat
+notepad scripts\config.bat
+```
+Set at minimum:
+```
+INSTANCE_ID=...
+AWS_REGION=...
+KEY_FILE=...full path to .pem
+SERVER_VOTE_SCRIPT=/home/ubuntu/vote_shutdown.sh
+SERVER_USER=ubuntu
+TEAM_COUNT=3
+DEV1_IP=...  DEV1_NAME=Alice
+DEV2_IP=...  DEV2_NAME=Bob
+DEV3_IP=...  DEV3_NAME=Carol
+YOUR_NAME=Alice
+YOUR_IP=%DEV1_IP%
+```
+Leave `SERVER_IP=0.0.0.0` initially – startup/shutdown scripts will update it.
 
-2. **Manual edit (legacy)** `scripts/config.bat`:
-   ```batch
-   notepad scripts\config.bat
-   ```
+## 🧪 Step 7: Validate AWS Environment
 
-3. **Find Your Instance ID**:
-   ```batch
-   aws ec2 describe-instances --query "Reservations[*].Instances[*].[InstanceId,Tags[?Key=='Name'].Value|[0],State.Name]" --output table
-   ```
+```powershell
+scripts\test_aws.bat
+```
+Expect SUCCESS section. Fix any credential / permission issues before proceeding.
 
-## 🧪 Step 6: Test Your Setup
+## 🚀 Step 8: Start the Instance
 
-### Test AWS Connectivity
+```powershell
+scripts\start_server.bat
+```
+On first run it will:
+1. Detect current state.
+2. Start if stopped.
+3. Poll until running.
+4. Resolve Public IP.
+5. Persist new IP into `config.bat` via safe rewrite.
 
-```batch
+Use `/debug` for verbose trace, `/auto` for non-interactive (skip pauses):
+```powershell
+scripts\start_server.bat /debug
+```
+
+## 🏗️ Step 9: Install Server Vote Script
+
+SSH into instance:
+```powershell
+ssh -i C:\path\to\key.pem ubuntu@<SERVER_IP>
+```
+Fetch script:
+```bash
+curl -o ~/vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
+chmod +x ~/vote_shutdown.sh
+sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown  # optional
+```
+No need to hardcode names inside the script—Windows client sync supplies a `team.map` each vote.
+
+Test server script:
+```bash
+vote_shutdown help
+vote_shutdown debug --plain
+```
+
+## 👥 Step 10: Prepare Team Roster Sync
+
+Roster is auto-built when initiating a shutdown. You can test generation without actually voting:
+```powershell
+scripts\sync_team.bat
+```
+(Will upload `~/.quorumstop/team.map` if server reachable.)
+
+File format on server (example):
+```
+# Auto-generated team map - Do NOT edit on server
+203.0.113.10 Alice
+203.0.113.20 Bob
+203.0.113.30 Carol
+```
+Edits should happen only in `config.bat` then re-synced.
+
+## 🗳️ Step 11: Trial Vote (Shutdown Flow)
+
+Open 2–3 SSH sessions to simulate multiple users. From Windows:
+```powershell
+scripts\shutdown_server.bat /debug
+```
+Sequence:
+1. Validates instance running & refreshes public IP if needed.
+2. Generates / uploads `team.map`.
+3. Initiates vote (initiator auto YES).
+4. Server broadcasts instructions.
+5. Users cast votes: `vote_shutdown yes|no`.
+6. Unanimous pass → 30s grace → AWS stop command.
+
+If solo (only initiator connected), shutdown proceeds immediately after short notice.
+
+Use `/auto` for unattended automation (e.g., scheduled task) – it suppresses pauses.
+
+## 🔍 Step 12: Verify Shutdown
+
+After PASS observe:
+```powershell
+aws ec2 describe-instances --instance-ids <ID> --query "Reservations[0].Instances[0].State.Name" --output text
+# -> stopping or stopped
+```
+
+## 🧼 Optional: Log & Directory Permissions
+
+Ensure `/var/log/quorumstop-votes.log` gets created. If permission issues:
+```bash
+sudo touch /var/log/quorumstop-votes.log
+sudo chown ubuntu:ubuntu /var/log/quorumstop-votes.log
+sudo chmod 640 /var/log/quorumstop-votes.log
+```
+
+## 🛡️ IAM Least Privilege Example Policy
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Effect": "Allow","Action": ["ec2:DescribeInstances"],"Resource": "*"},
+    {"Effect": "Allow","Action": ["ec2:StartInstances","ec2:StopInstances"],"Resource": "arn:aws:ec2:REGION:ACCOUNT:instance/INSTANCE_ID"},
+    {"Effect": "Allow","Action": ["sts:GetCallerIdentity"],"Resource": "*"}
+  ]
+}
+```
+Replace placeholders; optionally restrict region via condition.
+
+## 🔁 Updating Components
+
+- Pull repo updates: `git pull`.
+- Re-fetch `vote_shutdown.sh` if server logic changed.
+- Adjust timeouts / grace: edit top variables in server script.
+- Change unanimity rule: modify result condition block.
+
+## ⚡ Daily Usage Recap
+
+Start day:
+```powershell
+scripts\start_server.bat
+```
+End day:
+```powershell
+scripts\shutdown_server.bat
+```
+Check config:
+```powershell
+scripts\view_config.bat
+```
+Connectivity test:
+```powershell
 scripts\test_aws.bat
 ```
 
-Expected output:
-```
-=== AWS Debug Test ===
-...
-SUCCESS: All AWS commands working!
-```
+## 🧪 Troubleshooting Pointers
 
-### Test Configuration
+| Symptom | Check |
+|---------|-------|
+| Cannot resolve state | AWS CLI configured? `aws sts get-caller-identity` |
+| IP persists as 0.0.0.0 | Instance not running or no public IP yet; retry after a few seconds |
+| Vote never passes | Another session abstaining? List users: `who` on server |
+| SSH 255 error | Key path, permissions, security group ingress |
+| team.map missing | Network/SSH failure during `sync_team.bat`; run with console verbosity (omit /auto) |
 
-```batch
-scripts\view_config.bat
-```
+## ✅ Installation Complete
 
-### Test Server Start/Stop
+You now have:
+- Dynamic IP persistence
+- Unanimous shutdown voting with audit log
+- Automatic roster syncing
 
-```batch
-scripts\start_server.bat
-scripts\shutdown_server.bat
-```
-
-## 🏗️ Step 7: Server-Side Setup
-
-### Install Enhanced Vote Script on EC2
-
-SSH into your EC2 instance and set up the voting system:
-
-```bash
-# Connect to your server (from Windows PowerShell/Cmd, adjust path)
-ssh -i "C:\path\to\your\key.pem" ubuntu@YOUR-SERVER-IP
-```
-
-### Method 1: Download from Repository
-
-```bash
-# Download the script directly
-wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
-
-# Or use curl if wget is not available
-curl -o vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
-
-# Make executable
-chmod +x vote_shutdown.sh
-
-# Move to home directory
-mv vote_shutdown.sh /home/ubuntu/
-```
-
-### Method 2: Create Script Manually
-
-```bash
-# Create the script file
-nano /home/ubuntu/vote_shutdown.sh
-
-# Copy and paste the complete script content from server/vote_shutdown.sh
-# Save and exit (Ctrl+X, Y, Enter)
-
-# Make executable
-chmod +x /home/ubuntu/vote_shutdown.sh
-```
-
-### Create System-Wide Command (Optional)
-
-```bash
-# Create symlink for easy access (requires sudo)
-sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
-
-# Now users can run just "vote_shutdown" from anywhere
-```
-
-### Configure Your Team
-
-Edit the script to add your team members:
-
-```bash
-# Edit the script
-nano /home/ubuntu/vote_shutdown.sh
-
-# Find this section and update with your team's real IP addresses and names:
-declare -A DEV_NAMES
-DEV_NAMES["YOUR_IP_1"]="YourName1"     # Replace with actual IP and name
-DEV_NAMES["YOUR_IP_2"]="YourName2"     # Replace with actual IP and name  
-DEV_NAMES["YOUR_IP_3"]="YourName3"     # Replace with actual IP and name
-# Add more team members as needed
-
-# Save and exit
-```
-
-### Test the Installation
-
-```bash
-# Test the script
-./vote_shutdown.sh debug
-```
-
-**Expected output:**
-```
-=== 🔍 DEBUG INFORMATION ===
-
-🌐 Network Connection Detection:
-  SSH_CLIENT: 203.0.113.10 54892 22
-  SSH_CONNECTION: 203.0.113.10 54892 172.31.1.100 22
-
-📍 IP Detection Methods:
-  ✅ SSH_CLIENT method: 203.0.113.10
-  ✅ SSH_CONNECTION method: 203.0.113.10
-
-👨‍👩‍👧‍👦 Team Member Mappings:
-  203.0.113.10 → YourName1
-  203.0.113.20 → YourName2
-
-✅ Script is ready for democratic voting!
-```
-
-### Test Voting Commands
-
-```bash
-# Show help and usage
-./vote_shutdown.sh help
-
-# Check voting status
-./vote_shutdown.sh status
-
-# Test vote recording (will show error if no active vote)
-./vote_shutdown.sh yes
-```
-
-## ✅ Step 8: Verification
-
-### Complete System Test
-
-1. **Start server** (if stopped):
-   ```batch
-   scripts\start_server.bat
-   ```
-
-2. **SSH into server** to simulate multiple users:
-   ```powershell
-   ssh -i "C:\path\to\your-key.pem" ubuntu@YOUR-SERVER-IP
-   ```
-
-3. **From another command prompt, test shutdown**:
-   ```batch
-   scripts\shutdown_server.bat
-   ```
-
-4. **Vote from the SSH session**:
-   ```bash
-   # In the SSH session, when prompted:
-   vote_shutdown yes
-   ```
-
-If everything works, you should see the voting process complete successfully!
-
-## 🎉 Installation Complete!
-
-Your EC2 Democratic Shutdown System is now ready. Next steps:
-
-1. **Share scripts with team members** - Each person needs their own copy with their IP configured
-2. **Read the [Usage Guide](USAGE.md)** - Learn daily operations
-3. **Review [Security Guide](SECURITY.md)** - Implement best practices
-4. **Check [Troubleshooting](TROUBLESHOOTING.md)** - If you encounter issues
-
-## 🆘 Need Help?
-
-- Check our [Troubleshooting Guide](TROUBLESHOOTING.md)
-- [Open an issue](https://github.com/Obad94/aws-ec2-quorumstop/issues)
-- Review your configuration with `scripts\view_config.bat`
+Next steps:
+- Refine IAM policy
+- Consider Elastic IP or DNS alias
+- Add scheduled task using `/auto` for nightly vote attempt or report
 
 ---
 
-**Next: [Configuration Guide →](CONFIGURATION.md)**
+Continue to [Configuration Guide](CONFIGURATION.md) or [Usage Guide](USAGE.md).

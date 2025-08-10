@@ -35,19 +35,26 @@ mv vote_shutdown.sh /home/ubuntu/
 sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 ```
 
-## ⚙️ Configuration
+## 🔄 Dynamic Roster
 
-Edit the script to add your team members:
+Windows client builds & uploads `~/.quorumstop/team.map` at vote time. If present it overrides internal fallback names automatically—no regular manual edits required.
+
+Validate roster:
 
 ```bash
-nano /home/ubuntu/vote_shutdown.sh
-
-# Find and update this section:
-declare -A DEV_NAMES
-DEV_NAMES["YOUR_IP_1"]="YourName1"
-DEV_NAMES["YOUR_IP_2"]="YourName2"  
-DEV_NAMES["YOUR_IP_3"]="YourName3"
+cat ~/.quorumstop/team.map
 ```
+
+Format: `IP Name` per line (comments prefixed with `#`).
+
+## 🗳️ Voting Model (Default)
+
+- UNANIMOUS yes of all currently connected SSH sessions (`who`) required.
+- Initiator auto-recorded YES; solo initiator auto-pass.
+- Timeout and grace: configurable at top of script (`VOTE_TIMEOUT`, `SHUTDOWN_DELAY`).
+- Non-vote = NO (fail-safe).
+
+To implement majority/supermajority, adjust the final decision block and update documentation.
 
 ## 🧪 Testing
 
@@ -65,6 +72,7 @@ DEV_NAMES["YOUR_IP_3"]="YourName3"
 ## 📖 Usage
 
 **For team members:**
+
 ```bash
 vote_shutdown yes    # Agree to shutdown
 vote_shutdown no     # Reject shutdown
@@ -72,26 +80,68 @@ vote_shutdown status # Check current vote
 ```
 
 **For administration:**
+
 ```bash
 vote_shutdown debug  # Connection diagnostics
 vote_shutdown help   # Show all commands
 ```
 
+## 📝 Logs
+
+Audit log: `/var/log/quorumstop-votes.log`
+
+Ensure permissions:
+
+```bash
+sudo touch /var/log/quorumstop-votes.log && \
+  sudo chown ubuntu:ubuntu /var/log/quorumstop-votes.log && \
+  sudo chmod 640 /var/log/quorumstop-votes.log
+```
+
+Tail recent entries:
+
+```bash
+tail -20 /var/log/quorumstop-votes.log
+```
+
+## 🔐 Permissions & Hardening
+
+```bash
+chmod 700 ~/.quorumstop 2>/dev/null || true
+[ -d /tmp/shutdown_vote ] && chmod 700 /tmp/shutdown_vote 2>/dev/null || true
+```
+
+Consider CloudTrail alerts for out-of-band Start/Stop events lacking preceding PASS entries.
+
+## ❓ Troubleshooting Quick Tips
+
+| Issue | Check |
+|-------|-------|
+| Unknown(name) display | Was team.map uploaded? Permissions? CRLF? |
+| Vote never passes | Extra idle SSH session holding unanimity hostage |
+| Emojis garbled | Use `--plain` mode |
+| Log missing | Permissions or path wrong |
+
+Full guidance: see `../docs/` root documentation.
+
 ## 🔧 Troubleshooting
 
 **Script not found:**
+
 ```bash
 ls -la /home/ubuntu/vote_shutdown.sh
 chmod +x /home/ubuntu/vote_shutdown.sh
 ```
 
 **Team names show as "Unknown":**
+
 ```bash
 # Edit script and update DEV_NAMES array with real IPs
 nano /home/ubuntu/vote_shutdown.sh
 ```
 
 **Voting notifications not appearing:**
+
 ```bash
 # Check if wall command works
 wall "Test message"

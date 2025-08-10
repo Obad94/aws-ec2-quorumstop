@@ -1,16 +1,41 @@
 # Team of 5 Developers Example
 
-This folder shows a sample `config.bat` for a 5‑developer team.
+Sample (non-production) `config.bat` pattern for five developers. Do NOT include real secrets or IPs in committed examples.
 
-Adjustments you should make after copying lines into `scripts\config.bat`:
-1. Replace INSTANCE_ID with your real EC2 instance ID.
-2. Replace KEY_FILE with the actual path to your private key (.pem).
-3. Replace DEV*_IP values with real public IPs (from whatismyipaddress.com).
-4. Set YOUR_NAME and YOUR_IP for each developer’s local copy.
-5. Remove any unused DEV* entries.
+```batch
+@echo off
+REM === QuorumStop Example Config (5 Devs) ===
+set INSTANCE_ID=i-0EXAMPLEABCDE9999
+set AWS_REGION=us-east-1
+set SERVER_IP=0.0.0.0                  REM Auto-updated by scripts
+set KEY_FILE=C:\Keys\team5-example.pem
+set SERVER_USER=ubuntu
+set SERVER_VOTE_SCRIPT=/home/ubuntu/vote_shutdown.sh
 
-Extend beyond 5 developers:
-- Add `set DEV6_IP=...`, `set DEV7_IP=...` etc. Scripts now enumerate DEV pattern variables dynamically.
+set TEAM_COUNT=5
+set DEV1_IP=198.51.100.11 & set DEV1_NAME=Anna
+set DEV2_IP=198.51.100.12 & set DEV2_NAME=Ben
+set DEV3_IP=198.51.100.13 & set DEV3_NAME=Chloe
+set DEV4_IP=198.51.100.14 & set DEV4_NAME=Dan
+set DEV5_IP=198.51.100.15 & set DEV5_NAME=Elle
 
-Security note:
-Use only placeholder/test IP ranges in committed examples (203.0.113.x, 198.51.100.x, 192.0.2.x). Never commit real IPs or secrets.
+REM Local identity (each developer customizes below 2 lines in their copy)
+set YOUR_NAME=Anna
+set YOUR_IP=%DEV1_IP%
+```
+
+Guidelines:
+- Increment `TEAM_COUNT` when adding/removing roster slots.
+- Keep variable names sequential (DEV1..DEV5) for predictable iteration.
+- Unanimous YES of all connected SSH sessions required for shutdown (non-vote = NO).
+- Solo initiator auto-pass.
+- `sync_team.bat` uploads roster as `~/.quorumstop/team.map` each vote attempt.
+
+Extending beyond 5 developers:
+```
+set TEAM_COUNT=7
+set DEV6_IP=198.51.100.16 & set DEV6_NAME=Fiona
+set DEV7_IP=198.51.100.17 & set DEV7_NAME=Gabe
+```
+
+See `docs/CONFIGURATION.md` for advanced patterns and `docs/USAGE.md` for workflow.

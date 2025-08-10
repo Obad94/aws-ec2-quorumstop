@@ -1,12 +1,16 @@
 # Security Guide
 
-This guide covers security best practices for the AWS EC2 QuorumStop system.
+This guide reflects the updated architecture (dynamic roster sync, unanimous voting default, helper libraries) and provides best practices for securing AWS EC2 QuorumStop.
 
 ## 🔒 Core Security Principles
 
-Security should be a team responsibility. This guide helps you implement proper safeguards while maintaining the collaborative nature of the democratic shutdown system.
+1. **Least Privilege** – IAM identity only needs: describe, start, stop the single target instance + STS identity.
+2. **Ephemeral State** – Voting artifacts live under `/tmp/shutdown_vote` and are removed after each vote.
+3. **Authoritative Roster on Client** – Team list defined in `config.bat` → transmitted as `~/.quorumstop/team.map`; server fallback mappings are a *safety net* only.
+4. **Tamper Visibility** – Vote lifecycle logged to `/var/log/quorumstop-votes.log` (UTC timestamps). Alterations or gaps indicate potential tampering.
+5. **Secure Automation** – `/auto` mode avoids prompting; ensure automated runs originate from trusted machines / scheduled tasks with controlled credentials.
 
-### 1. SSH Key Management
+## 🔑 SSH Key Management
 
 **✅ Best Practices:**
 
@@ -33,92 +37,85 @@ ssh-keygen -t ed25519 -C "your.email@company.com" -f ~/.ssh/ec2-quorumstop-key
 - Using default key names for multiple projects
 - Never rotating keys
 
-### 2. AWS IAM Security
+## 🪪 AWS IAM Security (Refined)
 
-**Principle of Least Privilege:**
-
-Create a dedicated IAM policy with minimal required permissions:
-
+Minimal policy targeting one instance (replace REGION / ACCOUNT / INSTANCE_ID):
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeInstances",
-                "ec2:StartInstances",
-                "ec2:StopInstances"
-            ],
-            "Resource": "*",
-            "Condition": {
-                "StringEquals": {
-                    "ec2:ResourceTag/Project": "QuorumStop"
-                }
-            }
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Effect": "Allow","Action": ["ec2:DescribeInstances"],"Resource": "*"},
+    {"Effect": "Allow","Action": ["ec2:StartInstances","ec2:StopInstances"],"Resource": "arn:aws:ec2:REGION:ACCOUNT:instance/INSTANCE_ID"},
+    {"Effect": "Allow","Action": ["sts:GetCallerIdentity"],"Resource": "*"}
+  ]
 }
 ```
+Add optional conditions:
+- `aws:SourceIp` restrict to office / team IP CIDRs.
+- `aws:MultiFactorAuthPresent` true for manual interventions (optional if CI automation not required).
 
-**Enhanced Security Options:**
+## 👥 Roster Integrity
 
-1. **MFA Requirement:**
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:DescribeInstances",
-                "ec2:StartInstances",
-                "ec2:StopInstances"
-            ],
-            "Resource": "*",
-            "Condition": {
-                "Bool": {
-                    "aws:MultiFactorAuthPresent": "true"
-                },
-                "NumericLessThan": {
-                    "aws:MultiFactorAuthAge": "3600"
-                }
-            }
-        }
-    ]
-}
+The server no longer requires manual editing of `DEV_NAMES` for normal operation:
+- Client `scripts/sync_team.bat` generates `team.map` each vote.
+- Server script empties fallback map and loads `~/.quorumstop/team.map` if present.
+- Missing or stale `team.map` ⇒ names may appear as `Unknown(<ip>)` (treat as warning – investigate sync path, SSH, or key issues).
+
+**Hardening Tips:**
+- Restrict `~/.quorumstop` permissions: `chmod 700 ~/.quorumstop`.
+- Optionally verify file freshness before accepting vote: add a timestamp max-age check to `vote_shutdown.sh` (custom enhancement).
+
+## 🗳️ Voting Security Model
+
+Default rule: **UNANIMOUS** yes among *current connected* SSH users (initiator auto-YES). Non-vote = implicit NO. Solo initiator = auto-pass after safety grace.
+
+Security implications:
+- Prevents unilateral shutdown impacting active collaborators.
+- Idle forgotten sessions can block (fail-safe). Encourage users to log out or implement an idle detection enhancement.
+- To change to majority / supermajority you must modify server script logic – document any deviation for audit clarity.
+
+## 🧾 Audit & Logging
+
+Log path: `/var/log/quorumstop-votes.log`
+Format (UTC):
+```
+2025-08-10T18:45:12Z | VOTE_INITIATED | Alice | 203.0.113.10 | timeout=60 plain=0
+2025-08-10T18:45:20Z | VOTE_CAST | Bob | 203.0.113.20 | yes
+2025-08-10T18:45:47Z | VOTE_RESULT | Alice | 203.0.113.10 | PASS unanimous yes=2
+```
+Apply restrictive permissions:
+```bash
+sudo touch /var/log/quorumstop-votes.log
+sudo chown ubuntu:ubuntu /var/log/quorumstop-votes.log
+sudo chmod 640 /var/log/quorumstop-votes.log
+```
+Optionally ship to CloudWatch Logs or aggregate via fluent-bit for centralized retention.
+
+**Integrity Monitoring:**
+- Monitor for truncation or sudden absence.
+- Hash log (e.g., daily `sha256sum`) to detect tampering.
+
+## 🧩 Script & File Permissions
+
+**File Permissions:**
+```bash
+# Ensure vote script has proper permissions
+chmod 755 /home/ubuntu/vote_shutdown.sh
+chmod 700 /tmp/shutdown_vote  # Vote directory permissions
+
+# Secure SSH configuration
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
 ```
 
-2. **Time-based restrictions:**
-```json
-{
-    "Condition": {
-        "DateGreaterThan": {
-            "aws:CurrentTime": "08:00Z"
-        },
-        "DateLessThan": {
-            "aws:CurrentTime": "18:00Z"
-        }
-    }
-}
+**Roster directory**
+```bash
+chmod 700 ~/.quorumstop 2>/dev/null || true
+# Remove world access from vote dir if created
+[ -d /tmp/shutdown_vote ] && chmod 700 /tmp/shutdown_vote 2>/dev/null || true
 ```
 
-3. **IP-based restrictions:**
-```json
-{
-    "Condition": {
-        "IpAddress": {
-            "aws:SourceIp": [
-                "203.0.113.10/32",
-                "203.0.113.20/32",
-                "203.0.113.30/32"
-            ]
-        }
-    }
-}
-```
-
-### 3. Network Security
+## 🌐 Network Security
 
 **Security Group Configuration:**
 
@@ -147,308 +144,68 @@ Type: SSH, Protocol: TCP, Port: 22, Source: 0.0.0.0/0  # Allows SSH from anywher
 3. **VPN access**: Require VPN connection before SSH access
 4. **Network ACLs**: Additional layer of network filtering
 
-### 4. Server-Side Security
-
-**File Permissions:**
-```bash
-# Ensure vote script has proper permissions
-chmod 755 /home/ubuntu/vote_shutdown.sh
-chmod 700 /tmp/shutdown_vote  # Vote directory permissions
-
-# Secure SSH configuration
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/authorized_keys
-```
-
-**System Hardening:**
-```bash
-# Keep system updated
-sudo apt update && sudo apt upgrade -y
-
-# Install security updates automatically
-sudo apt install unattended-upgrades
-sudo dpkg-reconfigure unattended-upgrades
-
-# Configure firewall
-sudo ufw enable
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-```
-
-**Monitoring and Logging:**
-```bash
-# Enable detailed SSH logging
-echo "LogLevel VERBOSE" | sudo tee -a /etc/ssh/sshd_config
-
-# Monitor authentication attempts
-sudo tail -f /var/log/auth.log
-
-# Set up log rotation
-sudo logrotate -f /etc/logrotate.conf
-```
-
-## 🔍 Monitoring and Auditing
-
-### 1. AWS CloudTrail
-
-Enable CloudTrail to monitor all API calls:
-
-```json
-{
-    "eventSource": "ec2.amazonaws.com",
-    "eventName": "StartInstances",
-    "sourceIPAddress": "203.0.113.10",
-    "userIdentity": {
-        "userName": "alice",
-        "principalId": "AIDAI23HZ27SI6FQMGNQ2"
-    },
-    "resources": [
-        {
-            "resourceType": "AWS::EC2::Instance",
-            "resourceName": "i-1234567890abcdef0"
-        }
-    ]
-}
-```
-
-### 2. Vote Audit Trail
-
-**Enhanced logging in vote script:**
-```bash
-# Add to vote_shutdown.sh
-LOG_FILE="/var/log/quorumstop-votes.log"
-
-log_vote() {
-    local action="$1"
-    local user="$2" 
-    local ip="$3"
-    local result="$4"
-    
-    echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | $action | $user | $ip | $result" >> "$LOG_FILE"
-}
-
-# Usage in script
-log_vote "VOTE_INITIATED" "$initiator_name" "$initiator_ip" "SUCCESS"
-log_vote "VOTE_CAST" "$user_name" "$user_ip" "$vote"
-log_vote "VOTE_RESULT" "SYSTEM" "$initiator_ip" "$final_result"
-```
-
-### 3. Regular Security Reviews
-
-**Weekly Checklist:**
-- [ ] Review AWS CloudTrail logs for unusual activity
-- [ ] Check security group rules for changes
-- [ ] Verify team member IP addresses are still current
-- [ ] Review vote logs for suspicious patterns
-- [ ] Monitor AWS costs for unexpected charges
-
-**Monthly Checklist:**
-- [ ] Rotate SSH keys (if policy requires)
-- [ ] Update server packages and security patches
-- [ ] Review IAM policies and permissions
-- [ ] Audit team member access levels
-- [ ] Test backup and recovery procedures
-
-**Quarterly Checklist:**
-- [ ] Comprehensive security assessment
-- [ ] Review and update security policies
-- [ ] Team security training refresh
-- [ ] Penetration testing (if applicable)
-- [ ] Disaster recovery testing
-
-## 🚨 Incident Response
-
-### 1. Compromised SSH Key
-
-**Immediate Actions:**
-```bash
-# 1. Remove compromised key from server
-ssh -i "backup-key.pem" ubuntu@server
-nano ~/.ssh/authorized_keys  # Remove compromised key line
-
-# 2. Update security group to block compromised source IP
-aws ec2 revoke-security-group-ingress \
-    --group-id sg-12345678 \
-    --protocol tcp \
-    --port 22 \
-    --cidr 203.0.113.999/32
-
-# 3. Generate new key pair
-ssh-keygen -t ed25519 -C "replacement-key" -f ~/.ssh/new-quorumstop-key
-
-# 4. Add new key to server
-ssh-copy-id -i ~/.ssh/new-quorumstop-key.pub ubuntu@server
-```
-
-**Recovery Steps:**
-1. Investigate compromise source
-2. Update config.bat with new key path
-3. Test all team members can access with new keys
-4. Update documentation with new security procedures
-
-### 2. Suspicious Voting Activity
-
-**Warning Signs:**
-- Votes from unknown IP addresses
-- Voting patterns outside normal work hours
-- Rapid succession of vote initiations
-- Failed authentication attempts in logs
-
-**Investigation Process:**
-```bash
-# Check recent votes
-tail -100 /var/log/quorumstop-votes.log
-
-# Check authentication logs
-sudo grep "authentication failure" /var/log/auth.log
-
-# Check current connections
-who
-last -n 20
-
-# Review AWS CloudTrail for API calls
-aws logs filter-log-events \
-    --log-group-name CloudTrail \
-    --start-time $(date -d '1 hour ago' +%s)000
-```
-
-### 3. Security Group Breach
-
-**If security group rules are modified without authorization:**
-
-```bash
-# 1. Document current state
-aws ec2 describe-security-groups --group-ids sg-12345678 > security-group-backup.json
-
-# 2. Remove unauthorized rules
-aws ec2 revoke-security-group-ingress \
-    --group-id sg-12345678 \
-    --protocol tcp \
-    --port 22 \
-    --cidr 0.0.0.0/0
-
-# 3. Restore authorized rules only
-aws ec2 authorize-security-group-ingress \
-    --group-id sg-12345678 \
-    --protocol tcp \
-    --port 22 \
-    --cidr 203.0.113.10/32
-
-# 4. Enable additional logging
-aws ec2 create-flow-logs \
-    --resource-type Instance \
-    --resource-ids i-1234567890abcdef0 \
-    --traffic-type ALL \
-    --log-destination-type cloud-watch-logs
-```
-
-## 🔐 Advanced Security Options
-
-### 1. AWS Systems Manager Session Manager
-
-**Benefits over SSH:**
-- No inbound security group rules required
-- All sessions logged to CloudTrail
-- Centralized access control via IAM
-- No SSH keys to manage
-- Session recording capabilities
-
-**Setup:**
-```bash
-# Install SSM agent on EC2 instance
-sudo snap install amazon-ssm-agent --classic
-
-# Create IAM role for EC2
-aws iam create-role --role-name QuorumStop-EC2-Role --assume-role-policy-document file://trust-policy.json
-
-# Attach SSM policy
-aws iam attach-role-policy --role-name QuorumStop-EC2-Role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-```
-
-**Modified batch scripts:**
-```batch
-REM Replace SSH commands with SSM
-aws ssm start-session --target %INSTANCE_ID%
-
-REM For commands
-aws ssm send-command ^
-    --instance-ids %INSTANCE_ID% ^
-    --document-name "AWS-RunShellScript" ^
-    --parameters "commands=['/home/ubuntu/vote_shutdown.sh initiate %YOUR_IP%']"
-```
-
-### 2. Multi-Factor Authentication
-
-**For AWS CLI:**
-```batch
-REM Configure MFA device
-aws configure set aws_mfa_device arn:aws:iam::123456789012:mfa/alice
-
-REM Get temporary credentials with MFA
-aws sts get-session-token ^
-    --serial-number arn:aws:iam::123456789012:mfa/alice ^
-    --token-code 123456
-```
-
-### 3. Certificate-based Authentication
-
-**SSH certificates instead of keys:**
-```bash
-# Generate SSH CA
-ssh-keygen -t ed25519 -f ssh_ca
-
-# Sign user key
-ssh-keygen -s ssh_ca -I alice@company.com -n ubuntu ~/.ssh/alice_key.pub
-
-# Configure server to trust CA
-echo "TrustedUserCAKeys /etc/ssh/ssh_ca.pub" | sudo tee -a /etc/ssh/sshd_config
-```
-
-## 📋 Security Compliance
-
-### SOC 2 / ISO 27001 Considerations
-
-**Access Control:**
-- Implement role-based access control
-- Regular access reviews
-- Principle of least privilege
-- Multi-factor authentication
-
-**Data Protection:**
-- Encrypt data in transit (SSH/TLS)
-- Secure key management
-- Data retention policies
-- Secure disposal of vote data
-
-**Monitoring:**
-- Comprehensive logging
-- Real-time alerting
-- Incident response procedures
-- Regular security assessments
-
-### GDPR Considerations
-
-**If processing EU personal data:**
-- Minimize data collection (only IPs needed for functionality)
-- Implement data retention policies
-- Provide data deletion capabilities
-- Document data processing activities
-
-## 🆘 Getting Security Help
-
-**Report Security Vulnerabilities:**
-- Email: security@[your-domain].com (if available)
-- Create private security advisory on GitHub
-- Do NOT open public issues for security vulnerabilities
-
-**Security Questions:**
-- 📖 [Security Wiki](https://github.com/Obad94/aws-ec2-quorumstop/wiki/Security)
-- 💬 [Security Discussions](https://github.com/Obad94/aws-ec2-quorumstop/discussions/categories/security)
-- 🔒 Private team channels for sensitive topics
+## 🧪 Detection / Monitoring Enhancements
+
+| Layer | Enhancement | Benefit |
+|-------|-------------|---------|
+| OS | `auditd` watch `/var/log/quorumstop-votes.log` | Vote log integrity |
+| AWS | CloudTrail filter Start/Stop events | Correlate with logged votes |
+| Network | VPC Flow Logs (rejects) | Spot scanning / abuse |
+| Host | Fail2ban / UFW | Reduce brute force risk |
+
+Add CloudTrail alarm if Start/Stop occurs without preceding `VOTE_RESULT PASS` in last N minutes (custom lambda / SIEM rule).
+
+## 🚨 Incident Response (Adjusted)
+
+If unauthorized stop detected:
+1. Retrieve last 50 log lines: `tail -50 /var/log/quorumstop-votes.log`.
+2. Compare timestamps with CloudTrail `StopInstances` event.
+3. If mismatch → potential bypass (manual AWS console/API). Investigate IAM usage.
+
+If roster poisoning suspected (team.map altered):
+- Compare local client config roster vs server map: `diff <(sort team.map) <(cat expected_roster.txt)` (if you maintain a reference).
+- Add signature (e.g., HMAC) future enhancement: clients append `# sig=<hash>` header verified server-side.
+
+## 🛡️ Hardening Checklist
+
+| Area | Action | Status |
+|------|--------|--------|
+| IAM | Least privilege policy applied |  |
+| IAM | MFA enforced for interactive users |  |
+| SSH | Per-user key pairs only |  |
+| SSH | Security group restricted to team IPs / VPN |  |
+| Roster | `~/.quorumstop` perms 700 |  |
+| Logging | Vote log permissions 640 |  |
+| Monitoring | CloudTrail alerts for Start/Stop |  |
+| Integrity | Daily hash of vote log stored off-host |  |
+| Updates | System packages auto-updated |  |
+| Review | Monthly access & roster audit |  |
+
+## 🔐 Advanced Options
+
+### Systems Manager (SSM) Instead of SSH
+- Eliminates inbound 22.
+- All commands auditable in CloudTrail.
+Adapt `shutdown_server.bat` to replace SSH command with SSM `send-command` invoking vote script (SSM document or direct shell). Ensure SSM IAM permissions added: `ssm:SendCommand`, `ssm:StartSession` plus instance role with `AmazonSSMManagedInstanceCore`.
+
+### Signed Roster (Future Enhancement)
+- Clients generate roster + detached signature.
+- Server validates signature before loading to prevent on-path modification.
+
+## 🧪 Root Credential Usage Warning
+
+`test_aws.bat` surfaces root ARN pattern `:root$`. Treat root key discovery as a rotation emergency: delete root access keys, migrate to IAM roles/users with MFA.
+
+## ❓ Quick FAQ
+
+**Q: Should we still edit DEV_NAMES inside `vote_shutdown.sh`?**  
+A: No – rely on synced `team.map`. Internal entries are fallback only.
+
+**Q: Can a malicious user falsify names?**  
+A: If they control *your* client config & can sync. Mitigate by restricting who can initiate votes (custom server-side IP allowlist) or adding signatures.
+
+**Q: What stops a direct AWS console stop?**  
+A: Nothing inherent; rely on IAM controls + alerting. Consider SCP (Service Control Policy) requiring condition tag unless a vote log event exists (advanced pattern).
 
 ---
-
-**Remember:** Security is not a one-time setup but an ongoing process. Regular reviews, updates, and team training are essential for maintaining a secure collaborative environment.
-
-**Next:** [Configuration Guide →](CONFIGURATION.md)
+Security is iterative—review logs, refine IAM, and automate checks.

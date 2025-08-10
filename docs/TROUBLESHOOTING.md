@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and fix common issues with AWS EC2 QuorumStop.
+Updated for unanimous voting rule, dynamic roster sync (team.map), and helper libraries.
 
 ## 🔎 Quick Diagnosis
 
@@ -219,314 +219,144 @@ ssh -i "key.pem" ec2-user@YOUR-SERVER-IP
 
 ---
 
-## 🗳️ Voting System Issues
+## 🔄 Public IP Sync Issues
 
-### Problem: "Vote script failed" or voting hangs
+### Problem: `SERVER_IP` remains 0.0.0.0
+- Instance not running yet → start then rerun `start_server.bat`.
+- No public IP (private subnet without Elastic IP) → associate Elastic IP or enable public addressing.
 
-**Check server-side script installation:**
+### Problem: `SERVER_IP` not updated after start
+Check presence of comment marker in `config.bat`:
+```
+REM Server Connection (Dynamic)
+set SERVER_IP=...
+```
+`lib_update_config.bat` searches for that marker. If removed, restore from sample.
+
+### Problem: IP resolves as "None"
+Public IP not allocated yet. Script retries; if still None, wait 10–30s and rerun.
+
+## 👥 Roster Sync Problems
+
+### Problem: Names show as `Unknown(<ip>)` in vote output
+Cause: `~/.quorumstop/team.map` missing or stale.
+Fix:
+```batch
+scripts\sync_team.bat /debug   REM (omit /auto to see errors)
+```
+Confirm upload: On server:
 ```bash
-# SSH into server first
-ssh -i "your-key.pem" ubuntu@YOUR-SERVER-IP
-
-# Check if enhanced vote script exists
-ls -la /home/ubuntu/vote_shutdown.sh
-
-# Test enhanced vote script
-./vote_shutdown.sh debug
+ls -l ~/.quorumstop/team.map
+cat ~/.quorumstop/team.map
 ```
+Ensure lines: `IP Name` with no trailing carriage returns (script strips CR).
 
-**Expected enhanced debug output:**
-```
-=== 🔍 DEBUG INFORMATION ===
+### Problem: New teammate not counted
+- Added `DEVn_IP` / `DEVn_NAME` but forgot to increment `TEAM_COUNT`.
+- Sync failed (SSH issue).
+- Teammate not actually connected (no active `who` output entry) → only connected users must vote.
 
-🌐 Network Connection Detection:
-  SSH_CLIENT: 203.0.113.10 54892 22
-  SSH_CONNECTION: 203.0.113.10 54892 172.31.1.100 22
+### Problem: Old teammate still appears
+Remove / renumber dev entries and decrement `TEAM_COUNT`. Then initiate any shutdown (sync overwrites server map). Stale names vanish.
 
-📍 IP Detection Methods:
-  ✅ SSH_CLIENT method: 203.0.113.10
-  ✅ SSH_CONNECTION method: 203.0.113.10
+## 🗳️ Voting Issues
 
-👨‍👩‍👧‍👦 Team Member Mappings:
-  203.0.113.10 → Alice
-  203.0.113.20 → Bob
-
-✅ Script is ready for democratic voting!
-```
-
-**If script is missing or outdated:**
+### Problem: Vote always fails even with everyone voting
+Check for an extra idle / detached SSH session. On server:
 ```bash
-# Download the latest enhanced script
-wget https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
-
-# Or recreate manually (see Installation Guide Step 7)
-nano /home/ubuntu/vote_shutdown.sh
-# Copy complete enhanced script content
-
-# Make executable
-chmod +x /home/ubuntu/vote_shutdown.sh
-
-# Configure your team IPs
-nano /home/ubuntu/vote_shutdown.sh
-# Edit the DEV_NAMES array with your team's actual IPs and names
+who
 ```
+All listed sessions count toward required unanimous YES (initiator auto-recorded). Anyone not casting a vote before timeout becomes an implicit NO.
 
-### Problem: Votes not counted correctly or team names show as "Unknown"
-
-**Check team configuration:**
+### Problem: Need majority instead of unanimous
+Modify logic in `vote_shutdown.sh` (final result block). Example majority snippet:
 ```bash
-# View current team mapping
-./vote_shutdown.sh debug | grep "Team Member Mappings" -A 10
-
-# Should show your actual team members:
-# 203.0.113.10 → Alice  
-# 203.0.113.20 → Bob
-# Not: Unknown(203.0.113.10)
+local needed=$(( total_participants/2 + 1 ))
+if [[ $yes_votes -ge $needed ]]; then
+  # PASS majority
+else
+  # FAIL
+fi
 ```
+Document change for team; update README references.
 
-**Fix team mapping:**
+### Problem: Immediate PASS without waiting
+Happens when initiator is only connected user (solo auto-pass feature). Open second SSH session to test full vote.
+
+### Problem: Vote script not broadcasting
+Check wall utility availability. On minimal images install `bsdmainutils` / `util-linux` depending on distro. Try `--plain` to fallback textual output.
+
+## 📁 File / Permission Issues
+
+### Problem: team.map uploads but unreadable
+Set proper permissions:
 ```bash
-# Edit the script
-nano /home/ubuntu/vote_shutdown.sh
-
-# Find and update this section with your real IPs:
-declare -A DEV_NAMES
-DEV_NAMES["YOUR_REAL_IP_1"]="ActualName1"
-DEV_NAMES["YOUR_REAL_IP_2"]="ActualName2"
-DEV_NAMES["YOUR_REAL_IP_3"]="ActualName3"
-
-# Save and test
-./vote_shutdown.sh debug
+chmod 700 ~/.quorumstop
 ```
+Verify contents free of Windows CRLF (script already strips). If manual edits introduced CR: `tr -d '\r' < team.map > t && mv t team.map`.
 
-### Problem: Enhanced voting features not working
-
-**Symptoms**: No emojis, basic messages instead of rich formatting
-
-**Solution**:
+### Problem: Vote log not created
+Manually seed and set perms:
 ```bash
-# Check script version by looking for enhanced features
-grep "🗳️" /home/ubuntu/vote_shutdown.sh
-
-# If not found, update to enhanced version
-wget -O /home/ubuntu/vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
-
-# Make executable and configure team
-chmod +x /home/ubuntu/vote_shutdown.sh
-nano /home/ubuntu/vote_shutdown.sh  # Update DEV_NAMES array
+sudo touch /var/log/quorumstop-votes.log
+sudo chown ubuntu:ubuntu /var/log/quorumstop-votes.log
+sudo chmod 640 /var/log/quorumstop-votes.log
 ```
+Run another vote test.
 
-### Problem: "vote_shutdown: command not found"
+## 🧪 Helper Library Issues
 
-**Cause**: System-wide symlink not created
-
-**Solution**:
-```bash
-# Create symlink for easier access
-sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
-
-# Test
-vote_shutdown help
-
-# Alternative: use full path
-./vote_shutdown.sh help
-```
-
-### Problem: SSH connection works but voting fails
-
-**Check BatchMode SSH**:
+### Problem: `lib_ec2.bat` returns exit code 2
+Indicates AWS CLI error or empty query. Test raw describe:
 ```powershell
-# Test batch mode SSH (used by voting)
-ssh -o BatchMode=yes -i "your-key.pem" ubuntu@SERVER-IP "echo 'Batch mode test'"
+aws ec2 describe-instances --region %AWS_REGION% --instance-ids %INSTANCE_ID%
+```
+Fix region/instance mismatch.
+
+### Problem: Capturing value into variable fails
+Use `/value` (alias of `/quiet`) and FOR loop:
+```batch
+for /f %%S in ('call scripts\lib_ec2.bat :GET_STATE /value') do set CUR=%%S
 ```
 
-**If batch mode fails**:
-- SSH key might require passphrase (not supported in batch mode)
-- Generate new key without passphrase for automation, or use ssh-agent
+## 🧾 Logging / Audit
+
+### Missing lines
+Check disk space: `df -h`. If rotated or truncated unexpectedly, investigate potential tampering.
+
+### Correlating Stop Event
+CloudTrail `StopInstances` timestamp should follow a `VOTE_RESULT PASS` log line. Absence suggests out-of-band manual stop; review IAM usage.
+
+## 🧰 Windows Batch Pitfalls
+
+### Paths with spaces
+Quote KEY_FILE path in config: `set KEY_FILE=C:\Users\John Doe\Downloads\key.pem` works (batch tolerant), but safest: no spaces or wrap operations in quotes when used.
+
+### Double-click runs then closes
+Always launch from an existing terminal to view output; `/auto` removes pauses purposely.
+
+## 🚀 Recovery Steps (Broken System)
+
+1. Backup current `config.bat`.
+2. Replace helper scripts from repo HEAD.
+3. Recreate vote script on server (curl RAW).
+4. Re-run `scripts\test_aws.bat`.
+5. Start → vote test.
+
+## 🚨 Emergency Manual Stop
+```powershell
+aws ec2 stop-instances --instance-ids %INSTANCE_ID%
+```
+Then inspect why voting path failed before reusing automation.
+
+## ✅ Preventative Checklist
+
+| Frequency | Action |
+|-----------|--------|
+| Weekly | Run `test_aws.bat`; prune idle SSH keys; review costs |
+| Weekly | Confirm roster accuracy / TEAM_COUNT alignment |
+| Monthly | Patch OS; update AWS CLI; verify log integrity |
+| Quarterly | Review IAM least privilege & CloudTrail alerts |
 
 ---
-
-## 💻 Windows Script Issues
-
-### Problem: "The system cannot find the file specified"
-
-**Check file locations**:
-```batch
-# Ensure all scripts are in same directory
-dir *.bat
-
-# Should see:
-# config.bat
-# start_server.bat  
-# shutdown_server.bat
-# view_config.bat
-# test_aws.bat
-```
-
-### Problem: "Access is denied" or scripts won't run
-
-**Solution**:
-```batch
-# Run Command Prompt as Administrator
-# Right-click Command Prompt → "Run as administrator"
-
-# Or check if files are blocked
-# Right-click each .bat file → Properties → Unblock (if present)
-```
-
-### Problem: Scripts run but immediately close
-
-**Cause**: Double-clicking .bat files
-
-**Solution**: 
-- Always run from Command Prompt or PowerShell
-- Or add `pause` command at end of scripts
-
-### Problem: "The filename, directory name, or volume label syntax is incorrect"
-
-**Cause**: Paths with spaces not properly quoted
-
-**Check config.bat**:
-```batch
-# Ensure paths with spaces are quoted
-set KEY_FILE="C:\Users\Your Name\Downloads\key.pem"
-# Not: C:\Users\Your Name\Downloads\key.pem
-```
-
----
-
-## 🔄 Server State Issues
-
-### Problem: Server stuck in "pending" state
-
-**Causes and solutions**:
-
-1. **First boot taking long**: Wait up to 5 minutes
-2. **Instance limits**: Check AWS account limits
-3. **Insufficient capacity**: Try different instance type/AZ
-
-```batch
-# Check current state
-aws ec2 describe-instances --instance-ids i-your-id --query "Reservations[0].Instances[0].State"
-
-# If stuck, terminate and launch new instance (data loss!)
-aws ec2 terminate-instances --instance-ids i-your-id
-```
-
-### Problem: Server stuck in "stopping" state
-
-**Solution**:
-```batch
-# Force stop (may take up to 10 minutes)
-aws ec2 stop-instances --instance-ids i-your-id --force
-
-# If still stuck after 10 minutes, contact AWS support
-```
-
-### Problem: Server starts but gets different IP every time
-
-**Solution**: Use Elastic IP
-```batch
-# Allocate Elastic IP
-aws ec2 allocate-address --domain vpc
-
-# Associate with instance
-aws ec2 associate-address --instance-id i-your-id --allocation-id eipalloc-12345678
-```
-
----
-
-## 🚨 Emergency Procedures
-
-### Emergency Server Stop (Bypass Voting)
-
-```batch
-# Direct AWS stop command
-aws ec2 stop-instances --instance-ids i-your-instance-id
-
-# Monitor until stopped
-aws ec2 describe-instances --instance-ids i-your-instance-id --query "Reservations[0].Instances[0].State.Name"
-```
-
-**Use only when**:
-- AWS costs are critical
-- Voting system is broken
-- Server is compromised
-- Team consensus offline
-
-### Reset Everything
-
-**If system is completely broken**:
-
-1. **Backup current config**:
-   ```batch
-   copy scripts\config.bat scripts\config_backup.bat
-   ```
-
-2. **Download fresh scripts** from GitHub
-
-3. **Reconfigure**:
-   ```batch
-   notepad scripts\config.bat
-   # Update with your settings from backup
-   ```
-
-4. **Test step by step**:
-   ```batch
-   scripts\test_aws.bat
-   scripts\view_config.bat  
-   scripts\start_server.bat
-   ```
-
-### Contact Support
-
-**Before contacting support, gather**:
-```batch
-# System information
-aws --version
-echo %AWS_REGION%
-echo %INSTANCE_ID%
-
-# Error messages
-# Copy exact error text from Command Prompt
-
-# Configuration
-scripts\view_config.bat
-
-# AWS account info
-aws sts get-caller-identity
-```
-
-**Where to get help**:
-- 📖 Project Wiki (if enabled): https://github.com/Obad94/aws-ec2-quorumstop/wiki
-- 🐛 Issues: https://github.com/Obad94/aws-ec2-quorumstop/issues
-- 💬 Discussions: https://github.com/Obad94/aws-ec2-quorumstop/discussions
-
----
-
-## ✅ Prevention Checklist
-
-**Weekly maintenance**:
-- [ ] Test `scripts\test_aws.bat` - ensure AWS connectivity
-- [ ] Check security groups - verify team IP addresses
-- [ ] Review AWS costs - confirm savings are realized
-- [ ] Update SSH keys - rotate if needed
-- [ ] Test voting system - ensure server script works
-
-**Monthly maintenance**:
-- [ ] Update AWS CLI if new version available  
-- [ ] Review team IP changes (people working from different locations)
-- [ ] Check instance health in AWS Console
-- [ ] Backup configuration files
-- [ ] Review and update team agreements
-
-**When problems occur**:
-1. ✋ **Don't panic** - most issues are configuration problems
-2. 📝 **Document the error** - copy exact messages
-3. 🔍 **Start with basics** - run `scripts\test_aws.bat`
-4. 📖 **Check this guide** - search for your error message
-5. 💬 **Ask for help** - provide full error details when asking
-
----
-
-**Next: [Security Guide →](SECURITY.md)**
+If unresolved, open an Issue with: error text, `test_aws.bat` output snippet, and relevant log lines.

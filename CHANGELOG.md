@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.14] - 2025-08-10
+### Added
+- Comprehensive documentation overhaul (README, CONFIGURATION, INSTALLATION, USAGE, SECURITY, TROUBLESHOOTING, PROJECT_STRUCTURE) reflecting:
+  - Unanimous voting (default) with solo initiator auto-pass.
+  - Dynamic roster sync via `sync_team.bat` → `~/.quorumstop/team.map` (server fallbacks now safety net only).
+  - Helper library roles (`lib_ec2.bat`, `lib_update_config.bat`) and safe IP persistence flow.
+  - Audit log usage and hardening guidance.
+- Updated examples (`examples/` README + team-3 / team-5) showing `TEAM_COUNT`, `DEVn_IP`, `DEVn_NAME`, and placeholder `SERVER_IP=0.0.0.0`.
+- Server README revisions: clarified dynamic map loading, decision model, plain mode, log permissions.
+- Tools README roadmap: added planned `report-status.bat`, scheduled task helper, and deprecated standalone `sync-ip.bat`.
+### Changed
+- Default decision documentation from (previous) majority style examples to explicit UNANIMOUS requirement (non‑vote = NO).
+- PROJECT_STRUCTURE now lists generated artifacts (team.map, vote log, vote dir) distinctly.
+- Consolidated references to editing `DEV_NAMES`—now discouraged in normal workflow (automatic override by uploaded roster).
+- Simplified voting scenario tables to reflect unanimous logic; removed outdated majority examples in public docs.
+- Harmonized phrasing across docs ("roster", "team map", "unanimous", "grace period").
+### Fixed
+- Inconsistencies between README and actual server logic (solo initiator behavior, unanimity vs majority mismatch).
+- Out-of-date instructions telling users to manually maintain server-side name mappings.
+- Several stale roadmap references (redundant sync-ip script) removed or reclassified.
+### Deprecated
+- Manual persistent editing of `DEV_NAMES` in `vote_shutdown.sh` (maintained only as fallback).
+### Notes
+- Future majority/supermajority options now explicitly treated as customization requiring code change.
+- Consider version 0.2.0 for first tagged release once setup wizard + CI workflow land.
+
 ## [0.1.13] - 2025-08-10
 ### Added
 - Actual shutdown execution in `server/vote_shutdown.sh` after unanimous PASS (previously only returned 0 without powering off).
