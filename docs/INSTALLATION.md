@@ -71,26 +71,18 @@ cd aws-ec2-quorumstop
 
 ## ⚙️ Step 6: Create Local Config
 
-Copy sample then edit (never commit real one):
+Run the interactive setup wizard (preferred and recommended). It will generate or update `scripts\config.bat` safely.
 ```powershell
-copy scripts\config.sample.bat scripts\config.bat
-notepad scripts\config.bat
+tools\setup-wizard.bat
 ```
-Set at minimum:
-```
-INSTANCE_ID=...
-AWS_REGION=...
-KEY_FILE=...full path to .pem
-SERVER_VOTE_SCRIPT=/home/ubuntu/vote_shutdown.sh
-SERVER_USER=ubuntu
-TEAM_COUNT=3
-DEV1_IP=...  DEV1_NAME=Alice
-DEV2_IP=...  DEV2_NAME=Bob
-DEV3_IP=...  DEV3_NAME=Carol
-YOUR_NAME=Alice
-YOUR_IP=%DEV1_IP%
-```
-Leave `SERVER_IP=0.0.0.0` initially – startup/shutdown scripts will update it.
+Wizard coverage:
+- Prompts for instance id, region, SSH key path, server user & vote script path
+- Collects team size, each teammate's IP & name, then lets you choose your identity
+- Re-run anytime to add/change teammates or rotate values (manual editing deprecated unless wizard cannot run)
+
+Leave `SERVER_IP=0.0.0.0` initially— scripts will update it automatically after the instance starts.
+
+(If absolutely necessary due to environment restrictions you may still copy `config.sample.bat`, but this path is no longer documented here to avoid drift.)
 
 ## 🧪 Step 7: Validate AWS Environment
 
