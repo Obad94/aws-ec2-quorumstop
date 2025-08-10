@@ -43,7 +43,9 @@
    ```batch
    tools\setup-wizard.bat
    ```
-   Answer prompts (instance id, region, key path, team IPs/names, your identity). Re-run anytime to add/change teammates. (Manual copy/edit is deprecated; only use it if the wizard cannot run in your environment.)
+   - Answer prompts (instance id, region, key path, team IPs/names, your identity).
+   - Re-run anytime to add/change teammates.
+   - (Manual copy/edit is deprecated; only use it if the wizard cannot run in your environment.)
 3. **Test AWS Environment**
    ```batch
    scripts\test_aws.bat
