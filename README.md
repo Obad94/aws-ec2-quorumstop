@@ -39,12 +39,11 @@
    git clone https://github.com/Obad94/aws-ec2-quorumstop.git
    cd aws-ec2-quorumstop
    ```
-2. **Copy & Edit Config** (never commit secrets):
+2. **Run Setup Wizard** (recommended – creates/updates `scripts\config.bat`):
    ```batch
-   copy scripts\config.sample.bat scripts\config.bat
-   notepad scripts\config.bat
+   tools\setup-wizard.bat
    ```
-   Set: `INSTANCE_ID`, `AWS_REGION`, `KEY_FILE`, `TEAM_COUNT`, each `DEVn_IP` + `DEVn_NAME`, and your `YOUR_NAME` / `YOUR_IP`.
+   Answer prompts (instance id, region, key path, team IPs/names, your identity). Re-run anytime to add/change teammates. (Manual copy/edit is deprecated; only use it if the wizard cannot run in your environment.)
 3. **Test AWS Environment**
    ```batch
    scripts\test_aws.bat
@@ -156,12 +155,14 @@ Rule: Any NO or any abstention (non-vote) causes failure.
 | `scripts/sync_team.bat` | Generate & upload `team.map` |
 | `scripts/test_aws.bat` | Environment & permission diagnostics |
 | `scripts/view_config.bat` | Summarize active config |
+| `tools/setup-wizard.bat` | Interactive generator/updater for `config.bat` |
 
 Flags:
 ```
 start_server.bat   [/auto] [/debug]
 shutdown_server.bat [/auto] [/debug]
 vote_shutdown.sh   [--plain] yes|no|status|debug|help
+tools\setup-wizard.bat [--auto] (env var driven)
 ```
 
 ## 🤝 Contributing
