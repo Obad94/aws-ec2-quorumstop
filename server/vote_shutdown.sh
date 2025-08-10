@@ -37,8 +37,8 @@ load_team_map() {
     DEV_NAMES=()
     while IFS=$' \t' read -r ip name _rest; do
       [[ -z $ip || ${ip:0:1} == '#' ]] && continue
-      ip=${ip%$'\r'}
-      name=${name%$'\r'}
+      ip=${ip%$'\r'}; ip=${ip//$'\n'/}
+      name=${name%$'\r'}; name=${name//$'\n'/}
       [[ -z $name ]] && continue
       DEV_NAMES["$ip"]="$name"
       ((loaded++))
@@ -150,10 +150,11 @@ send_vote_notification() {
 
 send_vote_update() {
     local user_name=$1 user_ip=$2 vote=$3
+    local hint="Use: vote_shutdown yes | vote_shutdown no"
     if [[ $vote == "yes" ]]; then
-        wall "$(emj vote)  VOTE UPDATE: $user_name ($user_ip) voted $(emj yes) YES" 2>/dev/null || true
+        wall "$(emj vote)  VOTE UPDATE: $user_name ($user_ip) voted $(emj yes) YES  - $hint" 2>/dev/null || true
     else
-        wall "$(emj vote)  VOTE UPDATE: $user_name ($user_ip) voted $(emj no) NO" 2>/dev/null || true
+        wall "$(emj vote)  VOTE UPDATE: $user_name ($user_ip) voted $(emj no) NO   - $hint" 2>/dev/null || true
     fi
 }
 
@@ -227,6 +228,10 @@ initiate_vote() {
     echo "$(emj vote)  Starting vote initiated by $initiator_name ($initiator_ip)"
     mkdir -p "$VOTE_DIR" && chmod 700 "$VOTE_DIR" 2>/dev/null || true
     rm -f "$VOTE_DIR"/*
+    # Auto-record initiator YES to reflect intent
+    echo yes >"$VOTE_DIR/${initiator_name}_${initiator_ip}_vote"
+    # Marker so late joiners can detect active vote
+    echo 1 > "$VOTE_DIR/NOTICE_SENT"
     local connected_ips=($(get_connected_users))
     local other_users=0
     echo ""
@@ -237,7 +242,7 @@ initiate_vote() {
             echo "  - $name ($ip)"
             ((other_users++))
         else
-            echo "  - $name ($ip) [INITIATOR]"
+            echo "  - $name ($ip) [INITIATOR]*"
         fi
     done
     if [[ $other_users -eq 0 ]]; then
@@ -254,8 +259,10 @@ initiate_vote() {
         sleep 10
         remaining=$((remaining - 10))
         local current_votes=$(ls "$VOTE_DIR"/*_vote 2>/dev/null | wc -l | tr -d ' ')
-        echo "$(emj clock) Time remaining: ${remaining}s | $(emj vote) Votes received: $current_votes/$other_users"
-        if [[ $current_votes -eq $other_users ]]; then
+        # Subtract the initiator's auto vote when displaying progress to users
+        local progress=$(( current_votes - 1 ))
+        echo "$(emj clock) Time remaining: ${remaining}s | $(emj vote) Votes received: $progress/$other_users"
+        if [[ $progress -eq $other_users ]]; then
             echo "$(emj yes) All users voted! Processing results..."
             break
         fi
@@ -274,7 +281,10 @@ initiate_vote() {
           no)  ((no_votes++)) ;;
         esac
     done
-    local non_voters=$((other_users - yes_votes - no_votes))
+    # other_users excludes initiator; initiator already counted yes
+    # Non-voters = (other_users + 1 initiator) - (yes_votes + no_votes), but initiator already voted yes
+    local total_participants=$((other_users + 1))
+    local non_voters=$((total_participants - yes_votes - no_votes))
     local total_no=$((no_votes + non_voters))
     echo ""
     echo "$(emj result) FINAL RESULTS:"

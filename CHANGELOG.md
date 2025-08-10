@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.12] - 2025-08-10
+### Added
+- Auto YES vote & progress normalization (excluding initiator) in `server/vote_shutdown.sh`.
+- Hint text appended to vote update broadcasts (usage reminder) in `server/vote_shutdown.sh`.
+### Changed
+- `start_server.bat` now updates in-session `SERVER_IP` variable after config write to avoid stale warning.
+- Improved post-write verification logic in `start_server.bat` with direct file line readback (no extra config reload).
+### Fixed
+- Eliminated false mismatch warning after IP update (stale environment variable) in `start_server.bat`.
+- Stricter CR/LF stripping & name sanitation in dynamic team map loader of `vote_shutdown.sh`.
+
 ## [0.1.11] - 2025-08-10
 ### Added
 - SYNC_ERR diagnostic output and clear sync success/fail messaging in `shutdown_server.bat`.
