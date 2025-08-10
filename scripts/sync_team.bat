@@ -36,10 +36,12 @@ set TMP_FILE=%TEMP%\team_map_%RANDOM%.tmp
   echo # Auto-generated team map - Do NOT edit on server
   echo # Generated: %date% %time%
   for /L %%n in (1,1,%TEAM_COUNT%) do (
-    call set _IP=%%DEV%%n_IP%%
-    call set _NM=%%DEV%%n_NAME%%
-    call if defined _IP if not defined _NM set _NM=Dev%%n
-    call if defined _IP echo %%_IP%% %%_NM%%
+    set "_IP="
+    set "_NM="
+    call set "_IP=%%DEV%%n_IP%%"
+    call set "_NM=%%DEV%%n_NAME%%"
+    if defined _IP if not defined _NM set "_NM=Dev%%n"
+    if defined _IP echo !_IP! !_NM!
   )
 ) > "%TMP_FILE%"
 

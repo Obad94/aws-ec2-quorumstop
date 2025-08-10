@@ -129,8 +129,26 @@ if "%SERVER_IP%"=="0.0.0.0" (
 )
 echo Syncing team map to server...
 if defined DEBUG echo [debug] Calling sync_team.bat
-call "%SCRIPT_DIR%sync_team.bat" >nul 2>&1
-if defined DEBUG echo [debug] sync_team.bat err=%errorlevel%
+REM Verbose sync when not AUTO or when DEBUG; quiet only in AUTO non-debug mode
+if defined DEBUG (
+  call "%SCRIPT_DIR%sync_team.bat"
+) else (
+  if defined AUTO (
+    call "%SCRIPT_DIR%sync_team.bat" >nul 2>&1
+  ) else (
+    call "%SCRIPT_DIR%sync_team.bat"
+  )
+)
+set "SYNC_ERR=%errorlevel%"
+if defined DEBUG echo [debug] Raw SYNC_ERR after call: %SYNC_ERR%
+echo [info] SYNC_ERR=%SYNC_ERR%
+if "%SYNC_ERR%"=="0" goto SYNC_OK
+echo WARNING: Team map sync failed (err %SYNC_ERR%). Falling back to server defaults.
+goto AFTER_SYNC
+:SYNC_OK
+echo Team map sync complete.
+:AFTER_SYNC
+
 echo Starting democratic vote process...
 echo Using SSH key: %KEY_FILE%
 echo Connecting to server: %SERVER_IP%

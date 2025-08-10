@@ -11,6 +11,12 @@ Desktop.ini
 
 # Local state
 shutdown_log.txt
+server_ip.txt
+
+# Ephemeral IP marker artifacts (accidental redirection)
+[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
+[0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
+[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9].[0-9][0-9][0-9]
 
 # AWS CLI artifacts
 .aws/

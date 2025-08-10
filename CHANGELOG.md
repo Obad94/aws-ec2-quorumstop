@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.11] - 2025-08-10
+### Added
+- SYNC_ERR diagnostic output and clear sync success/fail messaging in `shutdown_server.bat`.
+- Label-based flow (`SYNC_OK`, `AFTER_SYNC`) to simplify control after team sync.
+### Changed
+- Refactored `shutdown_server.bat` post-sync logic to eliminate fragile nested single-line IF/ELSE constructs.
+- Rewrote `sync_team.bat` loop to use delayed expansion safely (removed `call if` misuse) and reset temp vars each iteration.
+- Simplified team entry display in `config.bat` (removed parentheses that broke enclosing `for` block) for reliable rendering.
+### Fixed
+- Eliminated recurring `. was unexpected at this time.` batch parser error by removing problematic parenthesized IF blocks.
+- Resolved `'if' is not recognized` errors caused by malformed `call if` sequences in `sync_team.bat`.
+- Ensured dynamic `team.map` properly parsed so initiator name appears (no longer shows `Unknown(IP)` when sync succeeds).
+- Prevented duplicate/hidden failures of team map generation by surfacing sync status and gating fallback messaging.
+
 ## [0.1.10] - 2025-08-10
 ### Changed
 - `deploy_vote_script.bat`: Added /debug flag-controlled verbose output (suppressed unless /debug supplied).
