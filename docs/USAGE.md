@@ -8,20 +8,31 @@ Updated for unanimous voting default, dynamic team map syncing, and enhanced hel
 |---------|---------|-------------|
 | `scripts/start_server.bat` | Start instance / sync IP | Start of day |
 | `scripts/shutdown_server.bat` | Initiate unanimous shutdown vote | End of day |
+| `scripts/deploy_vote_script.bat` | Deploy/update server `vote_shutdown.sh` (hash & symlink) | Setup / After script updates |
 | `scripts/view_config.bat` | Display effective configuration | Anytime |
 | `scripts/test_aws.bat` | Validate AWS CLI & permissions | Setup / Debug |
 | `scripts/sync_team.bat` | Manually push roster (team.map) | Rare/manual |
+| `tools/setup-wizard.bat` | Generate/update config.bat interactively | Setup |
 
 Flags:
 ```
 /start scripts
   /debug  Verbose internal tracing
   /auto   Non-interactive (skip pauses)
+Deployment
+  deploy_vote_script.bat [/debug] [/force]
 Server vote script
   vote_shutdown [--plain] yes|no|status|debug|help
 ```
 
 ## 🗓️ Daily Flow
+
+### 0. (One-time) Generate Config
+Preferred:
+```batch
+tools\setup-wizard.bat
+```
+Re-run anytime to adjust roster or instance. Manual editing only if wizard unavailable.
 
 ### 1. Start Work
 ```batch
