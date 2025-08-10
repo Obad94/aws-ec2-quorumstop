@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.10] - 2025-08-10
+### Changed
+- `deploy_vote_script.bat`: Added /debug flag-controlled verbose output (suppressed unless /debug supplied).
+- `deploy_vote_script.bat`: Added /force handling separated from debug and improved control flow.
+- `deploy_vote_script.bat`: Show local SHA256 hash and remote hash with case normalization differences clarified.
+- `deploy_vote_script.bat`: Prevents verification (New Remote Hash) when no upload performed.
+### Fixed
+- Escaped & in echo lines to avoid premature command termination.
+- Eliminated early exit due to parsing errors (". was unexpected") by refactoring parenthesis blocks.
+- Ensured script returns 0 on success and non-zero only on real errors.
+### Added
+- Conditional remote hash verification only after actual upload; internal DID_UPLOAD flag.
+- Unified flag parsing for /debug and /force.
+
 ## [0.1.9] - 2025-08-10
 ### Fixed
 - **Critical Fix**: Resolved duplicate SERVER_IP entries in config.bat caused by faulty deduplication logic in lib_update_config.bat
