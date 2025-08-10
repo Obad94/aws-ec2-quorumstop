@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.9] - 2025-08-10
+### Fixed
+- **Critical Fix**: Resolved duplicate SERVER_IP entries in config.bat caused by faulty deduplication logic in lib_update_config.bat
+- **Critical Fix**: Fixed variable scoping issues in Windows batch loops by completely rewriting the update mechanism to use a two-step approach (remove all SERVER_IP lines, then add exactly one back)
+- Improved error handling and debugging output in lib_update_config.bat with proper /quiet and /debug flag support
+
+### Changed
+- **Major Refactor**: Completely rewrote lib_update_config.bat to eliminate duplicate SERVER_IP line issues using a clean slate approach
+- **Streamlined Scripts**: Simplified and cleaned up deploy_vote_script.bat, start_server.bat, and shutdown_server.bat for better maintainability
+- Enhanced start_server.bat and shutdown_server.bat with improved /debug and /auto flag support for better automation
+- Improved shutdown_server.bat with dynamic IP persistence via server_ip.txt file
+- Optimized deploy_vote_script.bat with more concise error handling and cleaner output
+
+### Added
+- Enhanced debugging capabilities across all core scripts with consistent /debug flag support
+- Runtime IP persistence mechanism in shutdown_server.bat to maintain IP state between script runs
+- Better automation support with improved /auto flag handling in start_server.bat and shutdown_server.bat
+
 ## [0.1.8] - 2025-08-09
 ### Fixed
 - **Critical Fix**: Resolved encoding issues in `scripts/lib_ec2.bat` that caused execution failures

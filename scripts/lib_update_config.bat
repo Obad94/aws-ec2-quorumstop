@@ -1,121 +1,63 @@
 @echo off
-REM ============================================
-REM Shared helper: lib_update_config.bat (Enhanced escaping)
-REM Provides :UPDATE_CONFIG routine to rewrite config.bat with new SERVER_IP
-REM Usage: call "%~dp0lib_update_config.bat" :UPDATE_CONFIG NEW_IP
-REM ============================================
-
-if /i "%1"==":UPDATE_CONFIG" goto UPDATE_CONFIG
+REM lib_update_config.bat - SERVER_IP updater with dedupe
+REM Usage: call lib_update_config.bat :SET_IP 1.2.3.4 [/quiet] [/debug]
+if /i "%1"==":SET_IP" shift & goto DO_SET
+if /i "%1"==":UPDATE_CONFIG" shift & goto DO_SET
 goto :eof
 
-:UPDATE_CONFIG
-shift
+:DO_SET
 setlocal EnableDelayedExpansion
-set NEW_IP_ADDRESS=%~1
-if not defined NEW_IP_ADDRESS goto :eof
-for /f "tokens=* delims= " %%a in ("%NEW_IP_ADDRESS%") do set NEW_IP_ADDRESS=%%a
-for /l %%a in (1,1,100) do if "!NEW_IP_ADDRESS:~-1!"==" " set NEW_IP_ADDRESS=!NEW_IP_ADDRESS:~0,-1!
-
-REM Load current config to preserve variables
-set "SCRIPT_DIR=%~dp0"
-if exist "%SCRIPT_DIR%config.bat" call "%SCRIPT_DIR%config.bat" >nul 2>&1
-
-REM If IP unchanged, exit silently
-if /i "!NEW_IP_ADDRESS!"=="%SERVER_IP%" (
-  echo (No change in IP; config not rewritten)
-  endlocal & goto :eof
+set "NEW_IP=%~1"
+shift
+:FLAGS
+if "%~1"=="" goto GOT_FLAGS
+if /i "%~1"=="/quiet"  (set QUIET=1 & shift & goto FLAGS)
+if /i "%~1"=="/silent" (set QUIET=1 & shift & goto FLAGS)
+if /i "%~1"=="/debug"  (set DEBUG=1 & shift & goto FLAGS)
+shift & goto FLAGS
+:GOT_FLAGS
+if not defined NEW_IP (if not defined QUIET echo [update] ERROR: Missing IP & endlocal & exit /b 1)
+for %%Z in ("%~dp0") do set "_RAW_DIR=%%~fZ"
+if exist "%CD%\scripts\config.bat" (
+  set "SCRIPT_DIR=%CD%\scripts\"
+) else (
+  set "SCRIPT_DIR=%_RAW_DIR%"
 )
+if /i "%SCRIPT_DIR%"=="C:\" if exist "%CD%\scripts\config.bat" set "SCRIPT_DIR=%CD%\scripts\"
+set "TARGET=%SCRIPT_DIR%config.bat"
+if defined DEBUG echo [update][debug] SCRIPT_DIR=%SCRIPT_DIR% TARGET=%TARGET% NEW_IP=%NEW_IP%
+if not exist "%TARGET%" (if not defined QUIET echo [update] ERROR: config.bat not found & endlocal & exit /b 2)
+set "TMP=%TARGET%.tmp__"
+set "UPDATED="
 
-REM Determine TEAM_COUNT (preserve if defined, else infer from highest DEVn_IP)
-set "_TEAM_COUNT=%TEAM_COUNT%"
-if not defined _TEAM_COUNT (
-  set /a _HI=0
-  for /L %%n in (1,1,99) do (
-    call if defined DEV%%n_IP set /a _HI=%%n
-  )
-  if !_HI! gtr 0 set _TEAM_COUNT=!_HI!
-)
-if not defined _TEAM_COUNT set _TEAM_COUNT=0
-
-REM Helper to escape special characters for echo lines
-call :_ESC VAR INSTANCE_ID
-call :_ESC VAR AWS_REGION
-call :_ESC VAR KEY_FILE
-call :_ESC VAR YOUR_NAME
-call :_ESC VAR YOUR_IP
-call :_ESC VAR SERVER_VOTE_SCRIPT
-call :_ESC VAR SERVER_USER
-
-REM Build temp file
-set TIMESTAMP=%date% %time%
+REM First, create a clean version by removing all SERVER_IP lines
 (
-  echo @echo off
-  echo REM ============================================
-  echo REM AWS EC2 QuorumStop - Configuration
-  echo REM This file is automatically updated by scripts\lib_update_config.bat
-  echo REM Last updated: !TIMESTAMP!
-  echo REM ============================================
-  echo.
-  echo REM AWS Configuration
-  echo set INSTANCE_ID=%INSTANCE_ID%
-  echo set AWS_REGION=%AWS_REGION%
-  echo.
-  echo REM Server Connection ^(Dynamic^)
-  echo set SERVER_IP=!NEW_IP_ADDRESS!
-  echo set KEY_FILE=%KEY_FILE%
-  echo.
-  echo REM Team Count ^(highest indexed DEVn_IP preserved^)
-  echo set TEAM_COUNT=!_TEAM_COUNT!
-  echo.
-  echo REM Team IP Mappings and Names
-  if not "!_TEAM_COUNT!"=="0" (
-    for /L %%n in (1,1,!_TEAM_COUNT!) do (
-      call set "_IP=%%DEV%%n_IP%%"
-      call set "_NM=%%DEV%%n_NAME%%"
-      if defined _IP echo set DEV%%n_IP=!_IP!
-      if defined _NM (
-        echo set DEV%%n_NAME=!_NM!
-      ) else (
-        echo set DEV%%n_NAME=Dev%%n
-      )
+  for /f "usebackq delims=" %%L in ("%TARGET%") do (
+    echo %%L | findstr /i /b /c:"set SERVER_IP=" >nul
+    if !errorlevel! NEQ 0 (
+      echo %%L
     )
-  ) else (
-    echo REM ^(No team members defined^)
   )
-  echo.
-  echo REM Current User Configuration
-  echo set YOUR_NAME=%YOUR_NAME%
-  echo set YOUR_IP=%YOUR_IP%
-  echo.
-  echo REM Server Configuration
-  echo set SERVER_VOTE_SCRIPT=%SERVER_VOTE_SCRIPT%
-  echo set SERVER_USER=%SERVER_USER%
-  echo.
-  echo REM Display Configuration ^(lists team entries^)
-  echo if "%%1"=="show" ^(
-  echo   echo ============================================
-  echo   echo AWS EC2 QuorumStop - Configuration
-  echo   echo ============================================
-  echo   echo Instance ID: %%INSTANCE_ID%%
-  echo   echo Region: %%AWS_REGION%%
-  echo   echo Server IP: %%SERVER_IP%%
-  echo   echo SSH Key: %%KEY_FILE%%
-  echo   echo User: %%SERVER_USER%%
-  echo   echo.
-  echo   echo Team Entries:
-  echo   for /L %%%%n in (1,1,%%TEAM_COUNT%%) do ^(
-  echo     call echo     DEV%%%%n_IP=%%DEV%%%%n_IP%% ^(%%DEV%%%%n_NAME%%^)
-  echo   ^)
-  echo   echo.
-  echo   echo Current User: %%YOUR_NAME%% ^(%%YOUR_IP%%^)
-  echo ^)
-) > "%SCRIPT_DIR%config_temp.bat"
+)>"%TMP%.clean" || (if not defined QUIET echo [update] ERROR: Clean temp write failed & del "%TMP%.clean" 2>nul & endlocal & exit /b 3)
 
-move /y "%SCRIPT_DIR%config_temp.bat" "%SCRIPT_DIR%config.bat" >nul
-endlocal & echo Updated config.bat with new IP %NEW_IP_ADDRESS%
-goto :eof
+REM Then, add the SERVER_IP line back in the right place
+set "FOUND_COMMENT="
+(
+  for /f "usebackq delims=" %%L in ("%TMP%.clean") do (
+    echo %%L
+    echo %%L | findstr /i /c:"Server Connection (Dynamic)" >nul
+    if !errorlevel! EQU 0 (
+      echo set SERVER_IP=%NEW_IP%
+      set "FOUND_COMMENT=1"
+    )
+  )
+)>"%TMP%" || (if not defined QUIET echo [update] ERROR: Final temp write failed & del "%TMP%" 2>nul & del "%TMP%.clean" 2>nul & endlocal & exit /b 3)
 
-:_ESC
-REM Parameters: mode varName
-REM Minimal placeholder (currently not transforming)—reserved for future complex escaping
-exit /b 0
+del "%TMP%.clean" 2>nul
+if not defined FOUND_COMMENT (if not defined QUIET echo [update] ERROR: Comment marker not found & del "%TMP%" 2>nul & endlocal & exit /b 5)
+set "UPDATED=1"
+move /y "%TMP%" "%TARGET%" >nul 2>&1 || (if not defined QUIET echo [update] ERROR: Replace failed & del "%TMP%" 2>nul & endlocal & exit /b 4)
+if not defined UPDATED (if not defined QUIET echo [update] WARNING: SERVER_IP line not found - no change & endlocal & exit /b 5)
+if not defined QUIET echo [update] SERVER_IP updated to %NEW_IP%
+if defined DEBUG for /f "tokens=1,* delims==" %%A in ('findstr /i /b /c:"set SERVER_IP=" "%TARGET%"') do echo [update][debug] Verified SERVER_IP=%%B
+endlocal & exit /b 0
