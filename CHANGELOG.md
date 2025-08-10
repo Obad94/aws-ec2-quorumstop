@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.13] - 2025-08-10
+### Added
+- Actual shutdown execution in `server/vote_shutdown.sh` after unanimous PASS (previously only returned 0 without powering off).
+- `SHUTDOWN_DELAY` variable (default 30s) providing grace period before issuing shutdown command.
+### Changed
+- PASS branch now invokes `shutdown -h now` (with fallbacks to `systemctl poweroff` / `poweroff`).
+- Clarified PASS messaging to warn users to save work.
+### Fixed
+- Issue where even unanimous YES votes did not power off the server because no shutdown command was executed.
+
 ## [0.1.12] - 2025-08-10
 ### Added
 - Auto YES vote & progress normalization (excluding initiator) in `server/vote_shutdown.sh`.

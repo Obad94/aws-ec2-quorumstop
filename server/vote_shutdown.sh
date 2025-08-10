@@ -9,7 +9,8 @@
 # 3. (Optional) Symlink: sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 
 VOTE_DIR="/tmp/shutdown_vote"
-VOTE_TIMEOUT=300  # 5 minutes voting window
+VOTE_TIMEOUT=60  # voting window in seconds
+SHUTDOWN_DELAY=30  # seconds after unanimous pass before issuing shutdown
 LOG_FILE="/var/log/quorumstop-votes.log"
 PLAIN_MODE=0
 TEAM_MAP_FILE="$HOME/.quorumstop/team.map"
@@ -281,8 +282,6 @@ initiate_vote() {
           no)  ((no_votes++)) ;;
         esac
     done
-    # other_users excludes initiator; initiator already counted yes
-    # Non-voters = (other_users + 1 initiator) - (yes_votes + no_votes), but initiator already voted yes
     local total_participants=$((other_users + 1))
     local non_voters=$((total_participants - yes_votes - no_votes))
     local total_no=$((no_votes + non_voters))
@@ -292,18 +291,32 @@ initiate_vote() {
     echo "$(emj no) NO votes: $no_votes (explicit)"
     echo "$(emj info) Non-voters: $non_voters (counted as NO)"
     echo "$(emj result) Total NO: $total_no"
-    echo "$(emj info) Required: YES votes must exceed total NO votes"
-    if [[ $yes_votes -gt $total_no ]]; then
+    echo "$(emj info) Required: ALL participants must vote YES (unanimous)"
+    # Unanimous requirement: no explicit NO and no non-voters
+    if [[ $total_no -eq 0 && $yes_votes -eq $total_participants ]]; then
         echo ""
-        echo "$(emj pass) RESULT: VOTE PASSED - Shutdown approved!"
+        echo "$(emj pass) RESULT: VOTE PASSED - Unanimous approval, shutdown proceeding!"
         send_final_results "$yes_votes" "$total_no" "$non_voters" "PASS"
-        log_vote "VOTE_RESULT" "$initiator_name" "$initiator_ip" "PASS yes=$yes_votes no=$total_no"
-        sleep 30
+        log_vote "VOTE_RESULT" "$initiator_name" "$initiator_ip" "PASS unanimous yes=$yes_votes"
+        echo "$(emj shutdown) Server will shutdown in $SHUTDOWN_DELAY seconds..."
+        echo "$(emj save) SAVE YOUR WORK NOW!"
+        # Grace period then attempt shutdown (multiple fallbacks)
+        sleep "$SHUTDOWN_DELAY"
+        if command -v shutdown >/dev/null 2>&1; then
+          sudo shutdown -h now "QuorumStop unanimous vote"
+        elif command -v systemctl >/dev/null 2>&1; then
+          sudo systemctl poweroff
+        elif command -v poweroff >/dev/null 2>&1; then
+          sudo poweroff
+        else
+          echo "$(emj warn) Unable to locate shutdown command; please shut down manually." >&2
+          log_vote "SHUTDOWN_FAIL" "$initiator_name" "$initiator_ip" "no_shutdown_command"
+        fi
         rm -rf "$VOTE_DIR"
         return 0
     else
         echo ""
-        echo "$(emj fail) RESULT: VOTE FAILED - Shutdown rejected!"
+        echo "$(emj fail) RESULT: VOTE FAILED - Not unanimous, shutdown cancelled."
         send_final_results "$yes_votes" "$total_no" "$non_voters" "FAIL"
         log_vote "VOTE_RESULT" "$initiator_name" "$initiator_ip" "FAIL yes=$yes_votes no=$total_no"
         rm -rf "$VOTE_DIR"
@@ -387,13 +400,13 @@ show_usage() {
     echo "  1. Windows script initiates vote"
     echo "  2. Notifications broadcast to all connected users"
     echo "  3. Users vote within the time limit (default: 5 minutes)"
-    echo "  4. Majority YES (strictly greater than NO+non-votes) = shutdown"
-    echo "  5. Otherwise server stays online"
+    echo "  4. UNANIMOUS YES required to shutdown"
+    echo "  5. Any NO or missing vote keeps server online"
     echo ""
     echo "DECISION RULES:" 
-    echo "  - YES votes must exceed total NO votes"
-    echo "  - Non-voters count as NO (safer)"
-    echo "  - Tie => Keep server running"
+    echo "  - All connected participants must vote YES"
+    echo "  - Any NO (explicit) or non-vote counts as NO -> vote fails"
+    echo "  - Solo initiator (no others connected) => auto-pass"
     echo ""
     echo "CONFIGURATION:"
     echo "  Update DEV_NAMES array within script"
