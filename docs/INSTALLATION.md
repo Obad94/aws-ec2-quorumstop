@@ -29,10 +29,22 @@ aws ec2 release-address --allocation-id eipalloc-XXXXXXXXXXXX
 
 ## 🛠️ Step 1: Install AWS CLI
 
-Download MSI from https://aws.amazon.com/cli/ then verify:
+Follow the official AWS CLI v2 install instructions:
+https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions
+
+Windows users (choose ONE):
+- Download and run the latest 64-bit MSI (most common) from the Windows section of the above page
+- Or use winget (Windows 10/11 with winget available):
+  ```powershell
+  winget install --id Amazon.AWSCLI -e
+  ```
+- Or use MSI for ARM64 if on ARM hardware (e.g., Windows on ARM)
+
+Verify installation (ensure it shows version 2.x):
 ```powershell
 aws --version
 ```
+If an older version 1.x appears, remove it and reinstall using the v2 instructions.
 
 ## 🔐 Step 2: Configure AWS Credentials
 
