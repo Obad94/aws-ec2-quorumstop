@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.15] - 2025-08-10
+### Added
+- "Fast Path" wizard-first section in `docs/CONFIGURATION.md` promoting `tools/setup-wizard.bat` as the recommended way to create/update `scripts/config.bat`.
+### Changed
+- Reinforced guidance to prefer the setup wizard over manual edits to reduce config drift and typos.
+### Notes
+- Next: propagate concise wizard hint blocks to any remaining docs if needed before tagging first pre-release.
+
 ## [0.1.14] - 2025-08-10
 ### Added
 - Comprehensive documentation overhaul (README, CONFIGURATION, INSTALLATION, USAGE, SECURITY, TROUBLESHOOTING, PROJECT_STRUCTURE) reflecting:

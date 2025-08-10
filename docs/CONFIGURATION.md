@@ -10,6 +10,22 @@ This guide describes every configurable aspect of AWS EC2 QuorumStop after the r
 2. EC2 server (`server/`):
    - `vote_shutdown.sh` (loads dynamic `~/.quorumstop/team.map` if present; fallbacks inside are only a safety net)
 
+## ⚙️ Fast Path (Recommended)
+Run `tools\setup-wizard.bat` to create or update `scripts\config.bat` interactively. The wizard will prompt for:
+- EC2 Instance ID & AWS region
+- SSH key (.pem) path & server user
+- Vote script remote path (defaults sensible)
+- Team size, each teammate's IP & name
+- Your identity (auto-suggest from roster entries)
+
+Re-run the wizard anytime to add/remove teammates or change values; existing entries are shown and only replaced if you confirm edits. Manual editing of `config.bat` should be reserved for advanced tweaks (e.g., integrating with a corporate VPN IP allocation script) or automated CI generation.
+
+Shortcut: If you supply environment variables (documented in the wizard help) you can drive it non-interactively for scripted onboarding.
+
+If a teammate changes ISP (new IP), just re-run the wizard (or manually edit the single `DEVn_IP` line) then continue normal usage.
+
+Proceed directly to the [Usage Guide](USAGE.md) after the wizard; you can revisit deeper details in the sections below when needed.
+
 ## 💻 Client Configuration (`scripts/config.bat`)
 
 Minimum required variables (example):
@@ -73,7 +89,7 @@ set YOUR_IP=%DEV2_IP%
 ```
 
 ### Never Commit Real Config
-Use `config.sample.bat` in git; keep `config.bat` ignored. If accidentally committed, rotate any compromised key or instance values immediately.
+Use `config.sample.bat` in git; keep `config.bat` ignored. If accidentally committed, rotate any compromised key or instance values immediately. Prefer regenerating / updating via `tools\setup-wizard.bat` instead of ad‑hoc manual edits to reduce drift and typos.
 
 ## 🔄 Dynamic Public IP Persistence
 
