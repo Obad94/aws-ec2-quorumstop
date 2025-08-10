@@ -128,6 +128,18 @@ get_user_ip() {
 send_vote_notification() {
     local initiator_name=$1
     local header="============================================"
+    # Derive human-readable window label
+    local window_label
+    if (( VOTE_TIMEOUT < 120 )); then
+      window_label="${VOTE_TIMEOUT} SECONDS"
+    else
+      local mins=$((VOTE_TIMEOUT/60))
+      if (( mins == 1 )); then
+        window_label="1 MINUTE"
+      else
+        window_label="${mins} MINUTES"
+      fi
+    fi
     {
       echo "$header"
       echo "$(emj vote)  SERVER SHUTDOWN VOTE"
@@ -136,7 +148,7 @@ send_vote_notification() {
       echo "Reason: Save AWS costs"
       echo "Time: $(date '+%H:%M %Z')"
       echo ""
-      echo "$(emj clock) You have $((VOTE_TIMEOUT / 60)) MINUTES to vote:"
+      echo "$(emj clock) You have $window_label to vote:"
       echo ""
       echo "$(emj yes) To AGREE to shutdown:"
       echo "   vote_shutdown yes"
@@ -399,7 +411,7 @@ show_usage() {
     echo "VOTING PROCESS:"
     echo "  1. Windows script initiates vote"
     echo "  2. Notifications broadcast to all connected users"
-    echo "  3. Users vote within the time limit (default: 5 minutes)"
+    echo "  3. Users vote within the time limit (default: 60 seconds)"
     echo "  4. UNANIMOUS YES required to shutdown"
     echo "  5. Any NO or missing vote keeps server online"
     echo ""
@@ -409,8 +421,8 @@ show_usage() {
     echo "  - Solo initiator (no others connected) => auto-pass"
     echo ""
     echo "CONFIGURATION:"
-    echo "  Update DEV_NAMES array within script"
-    echo "  Keep sync with Windows config for readability"
+    echo "  Normal: roster auto-synced from ~/.quorumstop/team.map (uploaded by client)"
+    echo "  Fallback: internal DEV_NAMES used ONLY if team.map missing/empty"
     echo ""
     echo "OPTIONS:"
     echo "  --plain / -p  Disable emojis for minimal terminals"
