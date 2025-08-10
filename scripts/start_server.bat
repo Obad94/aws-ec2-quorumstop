@@ -56,7 +56,7 @@ if /i "%CUR_IP%"=="None" (
   if !IP_TRY! lss 4 (set /a IP_TRY+=1 & timeout /t 5 >nul & goto RUN_IP) else (echo Public IP not assigned yet.& if not defined AUTO_MODE pause & exit /b 1)
 )
 if not "%CUR_IP%"=="%SERVER_IP%" (
-  echo Updating config SERVER_IP %SERVER_IP% ^> %CUR_IP%
+  echo Updating config SERVER_IP %SERVER_IP% -> %CUR_IP%
   if defined DEBUG echo [debug] Calling updater
   if defined DEBUG (
     call "%SCRIPT_DIR%lib_update_config.bat" :SET_IP "%CUR_IP%" /debug
@@ -117,7 +117,7 @@ if /i "%NEW_IP%"=="None" (
 )
 echo New IP: %NEW_IP%
 if not "%NEW_IP%"=="%SERVER_IP%" (
-  echo Updating config SERVER_IP %SERVER_IP% ^> %NEW_IP%
+  echo Updating config SERVER_IP %SERVER_IP% -> %NEW_IP%
   if defined DEBUG echo [debug] Calling updater
   if defined DEBUG (
     call "%SCRIPT_DIR%lib_update_config.bat" :SET_IP "%NEW_IP" /debug
