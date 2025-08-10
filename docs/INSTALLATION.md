@@ -60,7 +60,7 @@ aws sts get-caller-identity
 
 Add inbound rules for each teammate's *current* public IP (SSH / TCP / 22 / x.x.x.x/32). Add any required app ports separately.
 
-Find your IP: https://ifconfig.me (or similar site).
+Find your IP: https://whatismyipaddress.com/ (or similar site).
 
 ## 🔑 Step 4: SSH Key Prep
 
