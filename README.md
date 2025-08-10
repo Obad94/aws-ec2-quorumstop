@@ -34,6 +34,8 @@
 
 ## 🚀 Quick Start
 
+> New? First skim the [Installation Guide](docs/INSTALLATION.md) for AWS CLI setup, credentials, security group rules, and detailed step explanations, then return here for the condensed flow.
+
 1. **Clone**
    ```bash
    git clone https://github.com/Obad94/aws-ec2-quorumstop.git
@@ -54,7 +56,13 @@
    ```batch
    scripts\start_server.bat
    ```
-5. **Initiate Shutdown Vote** (later):
+5. **Deploy / Update Server Vote Script** (after first start or when script changes)
+   ```batch
+   scripts\deploy_vote_script.bat /debug
+   ```
+   - Skips upload if hashes match (use `/force` to override)
+   - Sets executable + symlink `/usr/local/bin/vote_shutdown`
+6. **Initiate Shutdown Vote** (later when done working):
    ```batch
    scripts\shutdown_server.bat
    ```
@@ -152,6 +160,7 @@ Rule: Any NO or any abstention (non-vote) causes failure.
 |--------|---------|
 | `scripts/start_server.bat` | Start instance, wait for state, sync IP | 
 | `scripts/shutdown_server.bat` | Run vote then stop instance on pass |
+| `scripts/deploy_vote_script.bat` | Upload/update `vote_shutdown.sh` (hash compare, symlink) |
 | `scripts/lib_ec2.bat` | Query state/public IP (quiet/value modes) |
 | `scripts/lib_update_config.bat` | Safe `SERVER_IP` rewrites |
 | `scripts/sync_team.bat` | Generate & upload `team.map` |
@@ -163,6 +172,7 @@ Flags:
 ```
 start_server.bat   [/auto] [/debug]
 shutdown_server.bat [/auto] [/debug]
+deploy_vote_script.bat [/debug] [/force]
 vote_shutdown.sh   [--plain] yes|no|status|debug|help
 tools\setup-wizard.bat [--auto] (env var driven)
 ```
@@ -186,6 +196,7 @@ Quick Commands:
 ```batch
 scripts\view_config.bat
 scripts\start_server.bat
+scripts\deploy_vote_script.bat /debug
 scripts\shutdown_server.bat
 scripts\test_aws.bat
 ```
