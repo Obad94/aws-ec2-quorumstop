@@ -110,23 +110,38 @@ scripts\start_server.bat /debug
 
 ## 🏗️ Step 9: Install Server Vote Script
 
-SSH into instance:
+Automated (recommended):
+```powershell
+scripts\deploy_vote_script.bat /debug
+```
+What it does:
+- Verifies required config + instance is running
+- Computes local & remote SHA256 hashes (skips upload if unchanged unless /force)
+- Uploads `server\vote_shutdown.sh` (scp or fallback)
+- Sets execute bit and symlink `/usr/local/bin/vote_shutdown`
+- Creates `~/.quorumstop` and prepares `/var/log/quorumstop-votes.log` (permissions attempt)
+- Re-prints final remote hash
+
+Optional flags:
+- `/force` re-uploads even if hashes match
+- `/debug` verbose step tracing
+
+Manual fallback (only if the deploy script cannot run in your environment):
 ```powershell
 ssh -i C:\path\to\key.pem ubuntu@<SERVER_IP>
 ```
-Fetch script:
 ```bash
 curl -o ~/vote_shutdown.sh https://raw.githubusercontent.com/Obad94/aws-ec2-quorumstop/main/server/vote_shutdown.sh
 chmod +x ~/vote_shutdown.sh
-sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown  # optional
+sudo ln -sf /home/ubuntu/vote_shutdown.sh /usr/local/bin/vote_shutdown
 ```
-No need to hardcode names inside the script—Windows client sync supplies a `team.map` each vote.
-
-Test server script:
+Then test:
 ```bash
 vote_shutdown help
 vote_shutdown debug --plain
 ```
+
+No need to edit names inside the script—Windows client sync supplies a fresh `team.map` on each vote.
 
 ## 👥 Step 10: Prepare Team Roster Sync
 
