@@ -56,7 +56,8 @@ if /i "%CUR_IP%"=="None" (
   if !IP_TRY! lss 4 (set /a IP_TRY+=1 & timeout /t 5 >nul & goto RUN_IP) else (echo Public IP not assigned yet.& if not defined AUTO_MODE pause & exit /b 1)
 )
 if not "%CUR_IP%"=="%SERVER_IP%" (
-  echo Updating config SERVER_IP %SERVER_IP% -> %CUR_IP%
+  set "_OLD_SERVER_IP=%SERVER_IP%"
+  echo [info] Updating SERVER_IP !_OLD_SERVER_IP! -> %CUR_IP%
   if defined DEBUG echo [debug] Calling updater
   if defined DEBUG (
     call "%SCRIPT_DIR%lib_update_config.bat" :SET_IP "%CUR_IP%" /debug
@@ -72,14 +73,15 @@ if not "%CUR_IP%"=="%SERVER_IP%" (
   )
   REM Update in-memory variable so subsequent logic uses new IP
   set "SERVER_IP=%CUR_IP%"
+  REM Use delayed expansion for updated value displays
   set "_CHK_IP="
   for /f "tokens=1,* delims==" %%A in ('findstr /i /c:"set SERVER_IP=" "%SCRIPT_DIR%config.bat"') do if /i "%%A"=="set SERVER_IP" set "_CHK_IP=%%B"
-  if defined DEBUG echo [debug] Post-write line from file: !_CHK_IP! (env SERVER_IP=%SERVER_IP%)
+  if defined DEBUG echo [debug] Post-write line from file: !_CHK_IP! (env SERVER_IP=!SERVER_IP!)
   if defined _CHK_IP (
     for /f "tokens=*" %%Z in ("!_CHK_IP!") do set "_CHK_IP=%%Z"
-    if /i not "!_CHK_IP!"=="%SERVER_IP%" echo [start_server] WARNING: Disk value mismatch expected %SERVER_IP% got !_CHK_IP!
+    if /i not "!_CHK_IP!"=="!SERVER_IP!" echo [start_server] WARNING: Disk value mismatch expected !SERVER_IP! got !_CHK_IP!
   ) else echo [start_server] WARNING: Could not read back SERVER_IP line.
-  echo Updated SERVER_IP to %SERVER_IP%
+  echo Updated SERVER_IP to !SERVER_IP!
 ) else echo IP unchanged (%SERVER_IP%).
 if not defined AUTO_MODE pause
 exit /b 0
@@ -117,7 +119,8 @@ if /i "%NEW_IP%"=="None" (
 )
 echo New IP: %NEW_IP%
 if not "%NEW_IP%"=="%SERVER_IP%" (
-  echo Updating config SERVER_IP %SERVER_IP% -> %NEW_IP%
+  set "_OLD_SERVER_IP=%SERVER_IP%"
+  echo [info] Updating SERVER_IP !_OLD_SERVER_IP! -> %NEW_IP%
   if defined DEBUG echo [debug] Calling updater
   if defined DEBUG (
     call "%SCRIPT_DIR%lib_update_config.bat" :SET_IP "%NEW_IP" /debug
@@ -134,12 +137,12 @@ if not "%NEW_IP%"=="%SERVER_IP%" (
   set "SERVER_IP=%NEW_IP%"
   set "_CHK_IP="
   for /f "tokens=1,* delims==" %%A in ('findstr /i /c:"set SERVER_IP=" "%SCRIPT_DIR%config.bat"') do if /i "%%A"=="set SERVER_IP" set "_CHK_IP=%%B"
-  if defined DEBUG echo [debug] Post-write line from file: !_CHK_IP! (env SERVER_IP=%SERVER_IP%)
+  if defined DEBUG echo [debug] Post-write line from file: !_CHK_IP! (env SERVER_IP=!SERVER_IP!)
   if defined _CHK_IP (
     for /f "tokens=*" %%Z in ("!_CHK_IP!") do set "_CHK_IP=%%Z"
-    if /i not "!_CHK_IP!"=="%SERVER_IP%" echo [start_server] WARNING: Disk value mismatch expected %SERVER_IP% got !_CHK_IP!
+    if /i not "!_CHK_IP!"=="!SERVER_IP!" echo [start_server] WARNING: Disk value mismatch expected !SERVER_IP! got !_CHK_IP!
   ) else echo [start_server] WARNING: Could not read back SERVER_IP line.
-  echo Updated SERVER_IP to %SERVER_IP%
+  echo Updated SERVER_IP to !SERVER_IP!
 ) else echo IP already matches config.
 if not defined AUTO_MODE pause
 exit /b 0
